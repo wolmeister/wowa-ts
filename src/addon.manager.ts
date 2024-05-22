@@ -35,7 +35,7 @@ export class AddonManager {
 			throw new Error('Addon not found');
 		}
 
-		return await this.install(curseMod, gameVersion);
+		return this.install(curseMod, gameVersion);
 	}
 
 	public installById(id: number, gameVersion: GameVersion): void {
@@ -106,14 +106,14 @@ export class AddonManager {
 		const arrayBuffer = await response.arrayBuffer();
 		const buffer = Buffer.from(arrayBuffer);
 		const zip = new AdmZip(buffer);
-		await new Promise<void>((resolve, reject) => {
-			zip.extractAllToAsync(addonsFolder, true, undefined, (error) => {
-				if (error != null) {
-					return reject(error);
-				}
-				resolve();
-			});
-		});
+		for (const entry of zip.getEntries()) {
+			if (entry.isDirectory) {
+				await fs.mkdir(path.join(addonsFolder, entry.entryName), { recursive: true });
+				continue;
+			}
+
+			await fs.writeFile(path.join(addonsFolder, entry.entryName), entry.getData());
+		}
 
 		const installedAddon: Addon = {
 			id: curseMod.slug,

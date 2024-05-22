@@ -1,7 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { Mutex } from 'async-mutex';
-import { deepEquals } from 'bun';
 
 type KeyValueEntry = {
 	key: string[];
@@ -28,13 +27,21 @@ export class KeyValueStore {
 		});
 	}
 
+	private keyEquals(a: string[], b: string[]): boolean {
+		if (a.length !== b.length) {
+			return false;
+		}
+
+		return a.every((v, i) => v === b[i]);
+	}
+
 	async get(key: string[]): Promise<string | null> {
 		return this.mutex.runExclusive(() => {
 			if (this.storePath === null) {
 				throw new Error('The KeyValueStore is not initialized yet');
 			}
 
-			const entry = this.entries.find((e) => deepEquals(e.key, key));
+			const entry = this.entries.find((e) => this.keyEquals(e.key, key));
 			return entry?.value ?? null;
 		});
 	}
@@ -46,7 +53,7 @@ export class KeyValueStore {
 			}
 
 			return this.entries
-				.filter((e) => deepEquals(e.key.slice(0, prefix.length), prefix))
+				.filter((e) => this.keyEquals(e.key.slice(0, prefix.length), prefix))
 				.map((e) => e.value);
 		});
 	}
@@ -57,7 +64,7 @@ export class KeyValueStore {
 				throw new Error('The KeyValueStore is not initialized yet');
 			}
 
-			this.entries = this.entries.filter((e) => !deepEquals(e.key, key));
+			this.entries = this.entries.filter((e) => !this.keyEquals(e.key, key));
 			this.entries.push({ key, value });
 
 			const directory = path.dirname(this.storePath);

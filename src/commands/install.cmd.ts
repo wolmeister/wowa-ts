@@ -28,7 +28,7 @@ export class InstallCommand implements BaseCommand {
 				try {
 					const addon = await this.addonManager.installByUrl(url, gameVersion);
 					spinner.succeed(
-						`Installed ${addon.id} (${addon.gameVersion}) version ${addon.version} successfully`,
+						`Installed ${addon.id} ${addon.version} (${addon.gameVersion}) successfully`,
 					);
 				} catch (error) {
 					spinner.fail(`Failed to install ${url} (${gameVersion})`);
