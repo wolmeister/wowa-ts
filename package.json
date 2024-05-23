@@ -9,7 +9,8 @@
 	"scripts": {
 		"dev": "bun run --watch src/index.ts",
 		"lint": "bunx @biomejs/biome check ./src --apply-unsafe && tsc",
-		"compile": "bun build --compile --minify --outfile dist/wowa.exe src/index.ts"
+		"compile": "bun build --compile --minify --outfile dist/wowa.exe src/index.ts",
+		"copy": "cp dist/wowa.exe 'C:/Program Files (x86)/World of Warcraft/wowa/wowa.exe'"
 	},
 	"dependencies": {
 		"@commander-js/extra-typings": "12.0.1",
