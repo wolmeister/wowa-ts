@@ -11,6 +11,15 @@ import {
 	SearchModsSortOrder,
 } from './curse.client';
 
+export type UpdateEvent = { addonId: string; gameVersion: GameVersion } & (
+	| { name: 'start' }
+	| { name: 'already-up-to-date'; version: string }
+	| { name: 'updated'; fromVersion: string; toVersion: string }
+	| { name: 'error'; reason?: unknown }
+);
+
+export type UpdateListener = (event: UpdateEvent) => void;
+
 export class AddonManager {
 	constructor(
 		private curseClient: CurseClient,
@@ -42,22 +51,69 @@ export class AddonManager {
 		throw new Error('method not implemented');
 	}
 
-	public async updateAll(): Promise<void> {
-		const addons = this.repository.getAll();
-		// const updateTasks = addons.map(addon => async () => {
-		//   const spinner = new Spinner(`Updating addon ${addon.id}`);
-		//   spinner.start();
-		//   try {
-		//     await this.installByUrl(addon.id, addon.gameVersion);
-		//     spinner.stop(true);
-		//     console.log(`Updated ${addon.id} to version ${addon.version}`);
-		//   } catch (error) {
-		//     spinner.stop(true);
-		//     console.error(`Failed to update ${addon.id}: ${error.message}`);
-		//   }
-		// });
+	public async updateAll(listener?: UpdateListener): Promise<void> {
+		// TODO - This method should throw if one of the updates fail?
+		const addons = await this.repository.getAll();
+		await Promise.all(
+			addons.map(async (addon) => {
+				listener?.({ addonId: addon.id, gameVersion: addon.gameVersion, name: 'start' });
 
-		// await Promise.all(updateTasks.map(task => task()));
+				try {
+					const updatedAddon = await this.installByUrl(addon.id, addon.gameVersion);
+					if (updatedAddon.version !== addon.version) {
+						listener?.({
+							addonId: addon.id,
+							gameVersion: addon.gameVersion,
+							name: 'updated',
+							fromVersion: addon.version,
+							toVersion: updatedAddon.version,
+						});
+						return;
+					}
+
+					listener?.({
+						addonId: addon.id,
+						gameVersion: addon.gameVersion,
+						name: 'already-up-to-date',
+						version: addon.version,
+					});
+				} catch (error) {
+					listener?.({
+						addonId: addon.id,
+						gameVersion: addon.gameVersion,
+						name: 'error',
+						reason: error,
+					});
+				}
+			}),
+		);
+	}
+
+	async remove(id: string, gameVersion: GameVersion): Promise<Addon | null> {
+		const gameFolder = await this.configRepository.get('game.dir');
+		if (gameFolder === null) {
+			throw new Error('Config game.dir not defined');
+		}
+
+		const existingAddon = await this.repository.get(id, gameVersion);
+		if (existingAddon === null) {
+			return null;
+		}
+
+		const versionFolder = gameVersion === 'classic' ? '_classic_era_' : '_retail_';
+		const addonsFolder = path.join(gameFolder, `${versionFolder}/Interface/AddOns`);
+
+		await Promise.all(
+			existingAddon.directories
+				.map((d) => path.join(addonsFolder, d))
+				.map(async (d) => {
+					await fs.rm(d, { recursive: true, force: true });
+				}),
+		);
+
+		await this.repository.delete(id, gameVersion);
+
+		return existingAddon;
 	}
 
 	private async install(curseMod: CurseMod, gameVersion: GameVersion): Promise<Addon> {

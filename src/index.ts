@@ -10,6 +10,8 @@ import { CurseClient } from './curse.client';
 import { KeyValueStore } from './kv-store';
 import { AddonPrinter } from './addon.printer';
 import { ListCommand } from './commands/list.cmd';
+import { UpdateCommand } from './commands/update.cmd';
+import { RemoveCommand } from './commands/remove.cmd';
 
 function getKeyValueStorePath(): string {
 	const platform = os.platform();
@@ -43,10 +45,14 @@ const addonManager = new AddonManager(curseClient, addonRepository, configReposi
 const addonPrinter = new AddonPrinter();
 
 const installCommand = new InstallCommand(addonManager);
-const configCommand = new ConfigCommand(kvStore);
+const updateCommand = new UpdateCommand(addonManager);
+const removeCommand = new RemoveCommand(addonManager);
 const listCommand = new ListCommand(addonRepository, addonPrinter);
+const configCommand = new ConfigCommand(kvStore);
 
 program.addCommand(installCommand.buildCommand());
-program.addCommand(configCommand.buildCommand());
+program.addCommand(updateCommand.buildCommand());
+program.addCommand(removeCommand.buildCommand());
 program.addCommand(listCommand.buildCommand());
+program.addCommand(configCommand.buildCommand());
 program.parse();

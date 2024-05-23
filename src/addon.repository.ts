@@ -18,6 +18,10 @@ export class AddonRepository {
 		return this.kvStore.set(['addons', addon.gameVersion, addon.id], JSON.stringify(addon));
 	}
 
+	async delete(id: string, gameVersion: GameVersion): Promise<void> {
+		return this.kvStore.set(['addons', gameVersion, id], null);
+	}
+
 	async get(id: string, gameVersion: GameVersion): Promise<Addon | null> {
 		const addon = await this.kvStore.get(['addons', gameVersion, id]);
 		if (addon !== null) {

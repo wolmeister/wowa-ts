@@ -58,14 +58,16 @@ export class KeyValueStore {
 		});
 	}
 
-	async set(key: string[], value: string): Promise<void> {
+	async set(key: string[], value: string | null): Promise<void> {
 		return this.mutex.runExclusive(async () => {
 			if (this.storePath === null) {
 				throw new Error('The KeyValueStore is not initialized yet');
 			}
 
 			this.entries = this.entries.filter((e) => !this.keyEquals(e.key, key));
-			this.entries.push({ key, value });
+			if (value !== null) {
+				this.entries.push({ key, value });
+			}
 
 			const directory = path.dirname(this.storePath);
 			const directoryExists = await fs.exists(directory);
