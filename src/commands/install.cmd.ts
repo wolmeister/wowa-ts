@@ -32,6 +32,7 @@ export class InstallCommand implements BaseCommand {
 					);
 				} catch (error) {
 					spinner.fail(`Failed to install ${url} (${gameVersion})`);
+					console.error(error);
 				}
 			});
 	}

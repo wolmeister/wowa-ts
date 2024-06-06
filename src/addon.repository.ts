@@ -9,6 +9,10 @@ export type Addon = {
 	version: string;
 	gameVersion: GameVersion;
 	directories: string[];
+	provider: {
+		name: 'curse';
+		curseModId: number;
+	};
 };
 
 export class AddonRepository {

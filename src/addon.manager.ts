@@ -54,14 +54,23 @@ export class AddonManager {
 	public async updateAll(listener?: UpdateListener): Promise<void> {
 		// TODO - This method should throw if one of the updates fail?
 		const addons = await this.repository.getAll();
+
+		const fireEvent = (event: UpdateEvent): void => {
+			if (listener !== undefined) {
+				setImmediate(() => {
+					listener(event);
+				});
+			}
+		};
+
 		await Promise.all(
 			addons.map(async (addon) => {
-				listener?.({ addonId: addon.id, gameVersion: addon.gameVersion, name: 'start' });
+				fireEvent({ addonId: addon.id, gameVersion: addon.gameVersion, name: 'start' });
 
 				try {
 					const updatedAddon = await this.installByUrl(addon.id, addon.gameVersion);
 					if (updatedAddon.version !== addon.version) {
-						listener?.({
+						fireEvent({
 							addonId: addon.id,
 							gameVersion: addon.gameVersion,
 							name: 'updated',
@@ -71,14 +80,14 @@ export class AddonManager {
 						return;
 					}
 
-					listener?.({
+					fireEvent({
 						addonId: addon.id,
 						gameVersion: addon.gameVersion,
 						name: 'already-up-to-date',
 						version: addon.version,
 					});
 				} catch (error) {
-					listener?.({
+					fireEvent({
 						addonId: addon.id,
 						gameVersion: addon.gameVersion,
 						name: 'error',
@@ -162,14 +171,35 @@ export class AddonManager {
 		const arrayBuffer = await response.arrayBuffer();
 		const buffer = Buffer.from(arrayBuffer);
 		const zip = new AdmZip(buffer);
-		for (const entry of zip.getEntries()) {
+		const zipEntries = zip.getEntries();
+
+		// Some zip files will not contain all directory entries.
+		// So we need to create these folders manually.
+		// We don't care about empty folders, so we can safely skip them.
+		const directories = new Set<string>();
+		for (const entry of zipEntries) {
 			if (entry.isDirectory) {
-				await fs.mkdir(path.join(addonsFolder, entry.entryName), { recursive: true });
 				continue;
 			}
-
-			await fs.writeFile(path.join(addonsFolder, entry.entryName), entry.getData());
+			directories.add(path.dirname(path.join(addonsFolder, entry.entryName)));
 		}
+
+		// Create all directories first.
+		// Then later we can write all files at once.
+		await Promise.all(
+			Array.from(directories).map(async (dir) => {
+				await fs.mkdir(dir, { recursive: true });
+			}),
+		);
+
+		// Write all files.
+		await Promise.all(
+			zipEntries
+				.filter((entry) => !entry.isDirectory)
+				.map(async (entry) => {
+					await fs.writeFile(path.join(addonsFolder, entry.entryName), entry.getData());
+				}),
+		);
 
 		const installedAddon: Addon = {
 			id: curseMod.slug,
@@ -178,6 +208,10 @@ export class AddonManager {
 			author: curseMod.authors[0]?.name ?? 'N/A',
 			gameVersion: gameVersion,
 			directories: modFile.modules.map((module) => module.name),
+			provider: {
+				name: 'curse',
+				curseModId: curseMod.id,
+			},
 		};
 		await this.repository.save(installedAddon);
 
