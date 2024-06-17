@@ -33,7 +33,7 @@ export class UpdateCommand implements BaseCommand {
 								spinners
 									.get(this.getSpinnerKey(event))
 									?.succeed(
-										`Updated ${event.addonId} (${event.gameVersion}) to ${event.toVersion}`,
+										`${event.addonId} (${event.gameVersion}) updated to ${event.toVersion}`,
 									);
 								break;
 							}
