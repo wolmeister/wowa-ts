@@ -1,6 +1,11 @@
-import type { KeyValueStore } from './kv-store';
+import type { KeyValueStoreRepository } from './kv-store.repository';
 
 export type GameVersion = 'retail' | 'classic';
+
+export type AddonDirectory = {
+	name: string;
+	hash: string | null;
+};
 
 export type Addon = {
 	id: string;
@@ -8,7 +13,7 @@ export type Addon = {
 	author: string;
 	version: string;
 	gameVersion: GameVersion;
-	directories: string[];
+	directories: AddonDirectory[];
 	provider: {
 		name: 'curse';
 		curseModId: number;
@@ -16,27 +21,22 @@ export type Addon = {
 };
 
 export class AddonRepository {
-	constructor(private kvStore: KeyValueStore) {}
+	constructor(private kvStoreRepository: KeyValueStoreRepository<Addon>) {}
 
 	save(addon: Addon): Promise<void> {
-		return this.kvStore.set(['addons', addon.gameVersion, addon.id], JSON.stringify(addon));
+		return this.kvStoreRepository.set(['addons', addon.gameVersion, addon.id], addon);
 	}
 
 	async delete(id: string, gameVersion: GameVersion): Promise<void> {
-		return this.kvStore.set(['addons', gameVersion, id], null);
+		return this.kvStoreRepository.set(['addons', gameVersion, id], null);
 	}
 
 	async get(id: string, gameVersion: GameVersion): Promise<Addon | null> {
-		const addon = await this.kvStore.get(['addons', gameVersion, id]);
-		if (addon !== null) {
-			return JSON.parse(addon);
-		}
-		return null;
+		return await this.kvStoreRepository.get(['addons', gameVersion, id]);
 	}
 
 	async getAll(gameVersion?: GameVersion): Promise<Addon[]> {
 		const key = gameVersion ? ['addons', gameVersion] : ['addons'];
-		const addons = await this.kvStore.getByPrefix(key);
-		return addons.map((a) => JSON.parse(a));
+		return await this.kvStoreRepository.getByPrefix(key);
 	}
 }

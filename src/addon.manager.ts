@@ -14,11 +14,17 @@ import {
 export type UpdateEvent = { addonId: string; gameVersion: GameVersion } & (
 	| { name: 'start' }
 	| { name: 'already-up-to-date'; version: string }
+	| { name: 'reinstalled'; version: string }
 	| { name: 'updated'; fromVersion: string; toVersion: string }
 	| { name: 'error'; reason?: unknown }
 );
 
 export type UpdateListener = (event: UpdateEvent) => void;
+
+export type InstalLResult = {
+	addon: Addon;
+	status: 'already-installed' | 'installed' | 'reinstalled' | 'updated';
+};
 
 export class AddonManager {
 	constructor(
@@ -27,7 +33,7 @@ export class AddonManager {
 		private configRepository: ConfigRepository,
 	) {}
 
-	public async installByUrl(url: string, gameVersion: GameVersion): Promise<Addon> {
+	public async installByUrl(url: string, gameVersion: GameVersion): Promise<InstalLResult> {
 		const slug = url.replace('https://www.curseforge.com/wow/addons/', '');
 
 		const searchModsResponse = await this.curseClient.searchMods({
@@ -68,14 +74,23 @@ export class AddonManager {
 				fireEvent({ addonId: addon.id, gameVersion: addon.gameVersion, name: 'start' });
 
 				try {
-					const updatedAddon = await this.installByUrl(addon.id, addon.gameVersion);
-					if (updatedAddon.version !== addon.version) {
+					const installResult = await this.installByUrl(addon.id, addon.gameVersion);
+					if (installResult.status === 'updated') {
 						fireEvent({
 							addonId: addon.id,
 							gameVersion: addon.gameVersion,
 							name: 'updated',
 							fromVersion: addon.version,
-							toVersion: updatedAddon.version,
+							toVersion: installResult.addon.version,
+						});
+						return;
+					}
+					if (installResult.status === 'reinstalled') {
+						fireEvent({
+							addonId: addon.id,
+							gameVersion: addon.gameVersion,
+							name: 'reinstalled',
+							version: installResult.addon.version,
 						});
 						return;
 					}
@@ -114,7 +129,7 @@ export class AddonManager {
 
 		await Promise.all(
 			existingAddon.directories
-				.map((d) => path.join(addonsFolder, d))
+				.map((d) => path.join(addonsFolder, d.name))
 				.map(async (d) => {
 					await fs.rm(d, { recursive: true, force: true });
 				}),
@@ -125,12 +140,7 @@ export class AddonManager {
 		return existingAddon;
 	}
 
-	private async install(curseMod: CurseMod, gameVersion: GameVersion): Promise<Addon> {
-		const gameFolder = await this.configRepository.get('game.dir');
-		if (gameFolder === null) {
-			throw new Error('Config game.dir not defined');
-		}
-
+	private async install(curseMod: CurseMod, gameVersion: GameVersion): Promise<InstalLResult> {
 		const gameVersionTypeId = gameVersion === 'retail' ? 517 : 67408;
 		const fileIndex = curseMod.latestFilesIndexes.find(
 			(fi) =>
@@ -142,10 +152,17 @@ export class AddonManager {
 			throw new Error('File index not found');
 		}
 
+		const addonsFolder = await this.getAddonsFolder(gameVersion);
+
 		const modFile = (await this.curseClient.getModFile(curseMod.id, fileIndex.fileId)).data;
 		const existingAddon = await this.repository.get(curseMod.slug, gameVersion);
 		if (existingAddon && existingAddon.version === modFile.displayName) {
-			return existingAddon;
+			if (await this.isAddonInstallationValid(existingAddon)) {
+				return {
+					addon: existingAddon,
+					status: 'already-installed',
+				};
+			}
 		}
 
 		const response = await fetch(modFile.downloadUrl);
@@ -153,13 +170,10 @@ export class AddonManager {
 			throw new Error('Failed to fetch addon file');
 		}
 
-		const versionFolder = gameVersion === 'classic' ? '_classic_era_' : '_retail_';
-		const addonsFolder = path.join(gameFolder, `${versionFolder}/Interface/AddOns`);
-
 		if (await fs.exists(addonsFolder)) {
 			await Promise.all(
 				(existingAddon?.directories ?? [])
-					.map((d) => path.join(addonsFolder, d))
+					.map((d) => path.join(addonsFolder, d.name))
 					.map(async (d) => {
 						await fs.rm(d, { recursive: true, force: true });
 					}),
@@ -207,7 +221,12 @@ export class AddonManager {
 			version: modFile.displayName,
 			author: curseMod.authors[0]?.name ?? 'N/A',
 			gameVersion: gameVersion,
-			directories: modFile.modules.map((module) => module.name),
+			directories: await Promise.all(
+				modFile.modules.map(async (module) => ({
+					name: module.name,
+					hash: null,
+				})),
+			),
 			provider: {
 				name: 'curse',
 				curseModId: curseMod.id,
@@ -215,6 +234,37 @@ export class AddonManager {
 		};
 		await this.repository.save(installedAddon);
 
-		return installedAddon;
+		return {
+			addon: installedAddon,
+			status:
+				existingAddon !== null && existingAddon.version === modFile.displayName
+					? 'reinstalled'
+					: existingAddon !== null
+						? 'updated'
+						: 'installed',
+		};
+	}
+
+	private async isAddonInstallationValid(addon: Addon): Promise<boolean> {
+		const addonsFolder = await this.getAddonsFolder(addon.gameVersion);
+		const validDirectories = await Promise.all(
+			addon.directories.map(async (addonDirectory) => {
+				const modulePath = path.join(addonsFolder, addonDirectory.name);
+				return fs.exists(modulePath);
+			}),
+		);
+		return validDirectories.every((valid) => valid === true);
+	}
+
+	private async getAddonsFolder(gameVersion: GameVersion): Promise<string> {
+		const gameFolder = await this.configRepository.get('game.dir');
+		if (gameFolder === null) {
+			throw new Error('Config game.dir not defined');
+		}
+
+		const versionFolder = gameVersion === 'classic' ? '_classic_era_' : '_retail_';
+		const addonsFolder = path.join(gameFolder, `${versionFolder}/Interface/AddOns`);
+
+		return addonsFolder;
 	}
 }

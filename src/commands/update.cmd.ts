@@ -1,8 +1,8 @@
 import { Command } from '@commander-js/extra-typings';
-import type { BaseCommand } from './cmd';
-import type { AddonManager, UpdateEvent } from '../addon.manager';
 import type { Ora } from 'ora';
 import ora from 'ora';
+import type { AddonManager, UpdateEvent } from '../addon.manager';
+import type { BaseCommand } from './cmd';
 
 export class UpdateCommand implements BaseCommand {
 	constructor(private addonManager: AddonManager) {}
@@ -41,6 +41,12 @@ export class UpdateCommand implements BaseCommand {
 								spinners
 									.get(this.getSpinnerKey(event))
 									?.succeed(`${event.addonId} (${event.gameVersion}) is already up to date`);
+								break;
+							}
+							case 'reinstalled': {
+								spinners
+									.get(this.getSpinnerKey(event))
+									?.warn(`${event.addonId} (${event.gameVersion}) reinstalled`);
 								break;
 							}
 							case 'error': {

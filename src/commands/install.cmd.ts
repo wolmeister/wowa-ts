@@ -26,10 +26,30 @@ export class InstallCommand implements BaseCommand {
 				const spinner = ora(`Installing ${url} (${gameVersion})`).start();
 
 				try {
-					const addon = await this.addonManager.installByUrl(url, gameVersion);
-					spinner.succeed(
-						`Installed ${addon.id} ${addon.version} (${addon.gameVersion}) successfully`,
-					);
+					const { addon, status } = await this.addonManager.installByUrl(url, gameVersion);
+
+					switch (status) {
+						case 'installed': {
+							spinner.succeed(
+								`${addon.id} (${addon.gameVersion}) ${addon.version} installed successfully`,
+							);
+							break;
+						}
+						case 'updated': {
+							spinner.succeed(`${addon.id} (${addon.gameVersion}) updated to ${addon.version}`);
+							break;
+						}
+						case 'already-installed': {
+							spinner.succeed(
+								`${addon.id} (${addon.gameVersion}) ${addon.version} is already installed`,
+							);
+							break;
+						}
+						case 'reinstalled': {
+							spinner.succeed(`${addon.id} (${addon.gameVersion}) ${addon.version} reinstalled`);
+							break;
+						}
+					}
 				} catch (error) {
 					spinner.fail(`Failed to install ${url} (${gameVersion})`);
 					console.error(error);

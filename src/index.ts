@@ -2,16 +2,18 @@ import os from 'node:os';
 import path from 'node:path';
 import { program } from '@commander-js/extra-typings';
 import { AddonManager } from './addon.manager';
+import { AddonPrinter } from './addon.printer';
 import { AddonRepository } from './addon.repository';
+import { addonRepositoryMigrations } from './addon.repository.migrations';
 import { ConfigCommand } from './commands/config.cmd';
 import { InstallCommand } from './commands/install.cmd';
+import { ListCommand } from './commands/list.cmd';
+import { RemoveCommand } from './commands/remove.cmd';
+import { UpdateCommand } from './commands/update.cmd';
 import { ConfigRepository } from './config.repository';
 import { CurseClient } from './curse.client';
 import { KeyValueStore } from './kv-store';
-import { AddonPrinter } from './addon.printer';
-import { ListCommand } from './commands/list.cmd';
-import { UpdateCommand } from './commands/update.cmd';
-import { RemoveCommand } from './commands/remove.cmd';
+import { KeyValueStoreRepository } from './kv-store.repository';
 
 function getKeyValueStorePath(): string {
 	const platform = os.platform();
@@ -33,7 +35,9 @@ const kvStore = new KeyValueStore();
 await kvStore.init(getKeyValueStorePath());
 
 const configRepository = new ConfigRepository(kvStore);
-const addonRepository = new AddonRepository(kvStore);
+const addonRepository = new AddonRepository(
+	new KeyValueStoreRepository(kvStore, 2, addonRepositoryMigrations),
+);
 
 const curseClient = new CurseClient();
 const curseToken = await configRepository.get('curse.token');

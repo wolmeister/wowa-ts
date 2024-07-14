@@ -1,7 +1,7 @@
 import { Command } from '@commander-js/extra-typings';
-import type { BaseCommand } from './cmd';
 import type { AddonPrinter } from '../addon.printer';
 import type { AddonRepository } from '../addon.repository';
+import type { BaseCommand } from './cmd';
 
 export class ListCommand implements BaseCommand {
 	constructor(
