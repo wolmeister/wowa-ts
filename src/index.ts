@@ -5,6 +5,8 @@ import { AddonManager } from './addon.manager';
 import { AddonPrinter } from './addon.printer';
 import { AddonRepository } from './addon.repository';
 import { addonRepositoryMigrations } from './addon.repository.migrations';
+import { BackupManager } from './backup.manager';
+import { BackupCommand } from './commands/backup.cmd';
 import { ConfigCommand } from './commands/config.cmd';
 import { InstallCommand } from './commands/install.cmd';
 import { ListCommand } from './commands/list.cmd';
@@ -47,16 +49,19 @@ if (curseToken !== null) {
 
 const addonManager = new AddonManager(curseClient, addonRepository, configRepository);
 const addonPrinter = new AddonPrinter();
+const backupManager = new BackupManager(configRepository);
 
 const installCommand = new InstallCommand(addonManager);
 const updateCommand = new UpdateCommand(addonManager);
 const removeCommand = new RemoveCommand(addonManager);
 const listCommand = new ListCommand(addonRepository, addonPrinter);
 const configCommand = new ConfigCommand(kvStore);
+const backupCommand = new BackupCommand(backupManager);
 
 program.addCommand(installCommand.buildCommand());
 program.addCommand(updateCommand.buildCommand());
 program.addCommand(removeCommand.buildCommand());
 program.addCommand(listCommand.buildCommand());
 program.addCommand(configCommand.buildCommand());
+program.addCommand(backupCommand.buildCommand());
 program.parse();
