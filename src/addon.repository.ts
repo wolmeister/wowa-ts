@@ -18,6 +18,8 @@ export type Addon = {
 		name: 'curse';
 		curseModId: number;
 	};
+	installedAt: string | null;
+	updatedAt: string | null;
 };
 
 export class AddonRepository {

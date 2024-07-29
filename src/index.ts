@@ -38,7 +38,7 @@ await kvStore.init(getKeyValueStorePath());
 
 const configRepository = new ConfigRepository(kvStore);
 const addonRepository = new AddonRepository(
-	new KeyValueStoreRepository(kvStore, 2, addonRepositoryMigrations),
+	new KeyValueStoreRepository(kvStore, 3, addonRepositoryMigrations),
 );
 
 const curseClient = new CurseClient();

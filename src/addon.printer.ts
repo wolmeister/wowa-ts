@@ -1,17 +1,21 @@
 import type { Addon } from './addon.repository';
+import { format } from 'date-fns';
 
 export class AddonPrinter {
 	print(addons: Addon[]): void {
-		const table = [['ID', 'Name', 'Version', 'Game Version']];
+		const table = [['ID', 'Name', 'Version', 'Game Version', 'Updated at']];
 		const largestColumns = table[0].map((c) => c.length);
 		for (const addon of addons) {
 			const addonName = addon.name.split(' ... ')[0];
+			const updatedAt = addon.updatedAt ? format(addon.updatedAt, 'dd/MM/yyyy HH:mm') : 'N/A';
 
-			table.push([addon.id, addonName, addon.version, addon.gameVersion]);
+			// TODO: Improve this.
+			table.push([addon.id, addonName, addon.version, addon.gameVersion, updatedAt]);
 			largestColumns[0] = Math.max(addon.id.length, largestColumns[0]);
 			largestColumns[1] = Math.max(addonName.length, largestColumns[1]);
 			largestColumns[2] = Math.max(addon.version.length, largestColumns[2]);
 			largestColumns[3] = Math.max(addon.gameVersion.length, largestColumns[3]);
+			largestColumns[4] = Math.max(updatedAt.length, largestColumns[4]);
 		}
 
 		for (const largestColumn of largestColumns) {

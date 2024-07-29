@@ -40,7 +40,7 @@ export class UpdateCommand implements BaseCommand {
 							case 'already-up-to-date': {
 								spinners
 									.get(this.getSpinnerKey(event))
-									?.succeed(`${event.addonId} (${event.gameVersion}) is already up to date`);
+									?.info(`${event.addonId} (${event.gameVersion}) is already up to date`);
 								break;
 							}
 							case 'reinstalled': {

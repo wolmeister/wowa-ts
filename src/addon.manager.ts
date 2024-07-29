@@ -231,6 +231,8 @@ export class AddonManager {
 				name: 'curse',
 				curseModId: curseMod.id,
 			},
+			installedAt: existingAddon?.installedAt ?? new Date().toISOString(),
+			updatedAt: existingAddon === null ? null : new Date().toISOString(),
 		};
 		await this.repository.save(installedAddon);
 

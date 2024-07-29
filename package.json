@@ -1,31 +1,32 @@
 {
-	"name": "wowa",
-	"version": "0.2.0-alpha",
-	"description": "World of Warcraft CLI addon manager",
-	"author": "Victor Wolmeister",
-	"license": "UNLICENSED",
-	"module": "src/index.ts",
-	"type": "module",
-	"scripts": {
-		"dev": "bun run --watch src/index.ts",
-		"lint": "bunx @biomejs/biome check ./src --apply-unsafe && tsc",
-		"compile:linux": "bun build --compile --minify --outfile dist/wowa src/index.ts",
-		"compile:windows": "bun build --compile --minify --outfile dist/wowa.exe src/index.ts",
-		"copy:windows": "cp dist/wowa.exe 'C:/Program Files (x86)/World of Warcraft/wowa/wowa.exe'"
-	},
-	"dependencies": {
-		"@commander-js/extra-typings": "12.0.1",
-		"adm-zip": "0.5.12",
-		"async-mutex": "0.5.0",
-		"commander": "12.0.0",
-		"ora": "8.0.1"
-	},
-	"peerDependencies": {
-		"typescript": "5.4.5"
-	},
-	"devDependencies": {
-		"@biomejs/biome": "1.7.3",
-		"@types/adm-zip": "0.5.5",
-		"@types/bun": "latest"
-	}
+  "name": "wowa",
+  "version": "0.2.0-alpha",
+  "description": "World of Warcraft CLI addon manager",
+  "author": "Victor Wolmeister",
+  "license": "UNLICENSED",
+  "module": "src/index.ts",
+  "type": "module",
+  "scripts": {
+    "dev": "bun run --watch src/index.ts",
+    "lint": "bunx @biomejs/biome check ./src --apply-unsafe && tsc",
+    "compile:linux": "bun build --compile --minify --outfile dist/wowa src/index.ts",
+    "compile:windows": "bun build --compile --minify --outfile dist/wowa.exe src/index.ts",
+    "copy:windows": "cp dist/wowa.exe 'C:/Program Files (x86)/World of Warcraft/wowa/wowa.exe'"
+  },
+  "dependencies": {
+    "@commander-js/extra-typings": "12.0.1",
+    "adm-zip": "0.5.12",
+    "async-mutex": "0.5.0",
+    "commander": "12.0.0",
+    "date-fns": "^3.6.0",
+    "ora": "8.0.1"
+  },
+  "peerDependencies": {
+    "typescript": "5.4.5"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "1.7.3",
+    "@types/adm-zip": "0.5.5",
+    "@types/bun": "latest"
+  }
 }

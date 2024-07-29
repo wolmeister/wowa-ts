@@ -40,13 +40,13 @@ export class InstallCommand implements BaseCommand {
 							break;
 						}
 						case 'already-installed': {
-							spinner.succeed(
+							spinner.info(
 								`${addon.id} (${addon.gameVersion}) ${addon.version} is already installed`,
 							);
 							break;
 						}
 						case 'reinstalled': {
-							spinner.succeed(`${addon.id} (${addon.gameVersion}) ${addon.version} reinstalled`);
+							spinner.warn(`${addon.id} (${addon.gameVersion}) ${addon.version} reinstalled`);
 							break;
 						}
 					}
