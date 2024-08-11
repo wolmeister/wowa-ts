@@ -16,6 +16,8 @@ import { ConfigRepository } from './config.repository';
 import { CurseClient } from './curse.client';
 import { KeyValueStore } from './kv-store';
 import { KeyValueStoreRepository } from './kv-store.repository';
+import { SharedMediaSyncCommand } from './commands/shhared-media-sync.cmd';
+import { SharedMediaManager } from './shared-media.manager';
 
 function getKeyValueStorePath(): string {
 	const platform = os.platform();
@@ -50,6 +52,7 @@ if (curseToken !== null) {
 const addonManager = new AddonManager(curseClient, addonRepository, configRepository);
 const addonPrinter = new AddonPrinter();
 const backupManager = new BackupManager(configRepository);
+const sharedMediaManager = new SharedMediaManager(addonRepository, configRepository);
 
 const installCommand = new InstallCommand(addonManager);
 const updateCommand = new UpdateCommand(addonManager);
@@ -57,6 +60,7 @@ const removeCommand = new RemoveCommand(addonManager);
 const listCommand = new ListCommand(addonRepository, addonPrinter);
 const configCommand = new ConfigCommand(kvStore);
 const backupCommand = new BackupCommand(backupManager);
+const sharedMediaSyncCommand = new SharedMediaSyncCommand(sharedMediaManager);
 
 program.addCommand(installCommand.buildCommand());
 program.addCommand(updateCommand.buildCommand());
@@ -64,4 +68,5 @@ program.addCommand(removeCommand.buildCommand());
 program.addCommand(listCommand.buildCommand());
 program.addCommand(configCommand.buildCommand());
 program.addCommand(backupCommand.buildCommand());
+program.addCommand(sharedMediaSyncCommand.buildCommand());
 program.parse();
