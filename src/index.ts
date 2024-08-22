@@ -16,8 +16,14 @@ import { ConfigRepository } from './config.repository';
 import { CurseClient } from './curse.client';
 import { KeyValueStore } from './kv-store';
 import { KeyValueStoreRepository } from './kv-store.repository';
-import { SharedMediaSyncCommand } from './commands/shhared-media-sync.cmd';
+import { SharedMediaSyncCommand } from './commands/shared-media-sync.cmd';
 import { SharedMediaManager } from './shared-media.manager';
+import { UserService } from './user.service';
+import { createClient } from '@supabase/supabase-js';
+import { SupabaseStorage } from './supabase.storage';
+import { WhoamiCommand } from './commands/whoami.cmd';
+import type { Database } from './supabase.db.types';
+import { LoginCommand } from './commands/login.cmd';
 
 function getKeyValueStorePath(): string {
 	const platform = os.platform();
@@ -39,9 +45,7 @@ const kvStore = new KeyValueStore();
 await kvStore.init(getKeyValueStorePath());
 
 const configRepository = new ConfigRepository(kvStore);
-const addonRepository = new AddonRepository(
-	new KeyValueStoreRepository(kvStore, 3, addonRepositoryMigrations),
-);
+const addonRepository = new AddonRepository(new KeyValueStoreRepository(kvStore, 1, []));
 
 const curseClient = new CurseClient();
 const curseToken = await configRepository.get('curse.token');
@@ -49,7 +53,25 @@ if (curseToken !== null) {
 	curseClient.setToken(curseToken);
 }
 
-const addonManager = new AddonManager(curseClient, addonRepository, configRepository);
+const supabaseClient = createClient<Database>(
+	process.env.SUPABASE_URL ?? '',
+	process.env.SUPABASE_KEY ?? '',
+	{
+		auth: {
+			storage: new SupabaseStorage(kvStore),
+		},
+	},
+);
+
+const userService = new UserService(supabaseClient);
+
+const addonManager = new AddonManager(
+	curseClient,
+	supabaseClient,
+	userService,
+	addonRepository,
+	configRepository,
+);
 const addonPrinter = new AddonPrinter();
 const backupManager = new BackupManager(configRepository);
 const sharedMediaManager = new SharedMediaManager(addonRepository, configRepository);
@@ -61,6 +83,8 @@ const listCommand = new ListCommand(addonRepository, addonPrinter);
 const configCommand = new ConfigCommand(kvStore);
 const backupCommand = new BackupCommand(backupManager);
 const sharedMediaSyncCommand = new SharedMediaSyncCommand(sharedMediaManager);
+const loginCommand = new LoginCommand(userService);
+const whoamiCommand = new WhoamiCommand(userService);
 
 program.addCommand(installCommand.buildCommand());
 program.addCommand(updateCommand.buildCommand());
@@ -69,4 +93,6 @@ program.addCommand(listCommand.buildCommand());
 program.addCommand(configCommand.buildCommand());
 program.addCommand(backupCommand.buildCommand());
 program.addCommand(sharedMediaSyncCommand.buildCommand());
+program.addCommand(loginCommand.buildCommand());
+program.addCommand(whoamiCommand.buildCommand());
 program.parse();

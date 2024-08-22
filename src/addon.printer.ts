@@ -1,8 +1,8 @@
-import type { Addon } from './addon.repository';
+import type { LocalAddon } from './addon.repository';
 import { format } from 'date-fns';
 
 export class AddonPrinter {
-	print(addons: Addon[]): void {
+	print(addons: LocalAddon[]): void {
 		const table = [['ID', 'Name', 'Version', 'Game Version', 'Updated at']];
 		const largestColumns = table[0].map((c) => c.length);
 		for (const addon of addons) {

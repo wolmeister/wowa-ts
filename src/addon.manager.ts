@@ -1,7 +1,8 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import AdmZip from 'adm-zip';
-import type { Addon, AddonRepository, GameVersion } from './addon.repository';
+import { randomUUID } from 'node:crypto';
+import type { LocalAddon, AddonRepository, GameVersion } from './addon.repository';
 import type { ConfigRepository } from './config.repository';
 import {
 	type CurseClient,
@@ -10,6 +11,9 @@ import {
 	SearchModsSortField,
 	SearchModsSortOrder,
 } from './curse.client';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import type { Database } from './supabase.db.types';
+import type { UserService } from './user.service';
 
 export type UpdateEvent = { addonId: string; gameVersion: GameVersion } & (
 	| { name: 'start' }
@@ -22,13 +26,15 @@ export type UpdateEvent = { addonId: string; gameVersion: GameVersion } & (
 export type UpdateListener = (event: UpdateEvent) => void;
 
 export type InstalLResult = {
-	addon: Addon;
+	addon: LocalAddon;
 	status: 'already-installed' | 'installed' | 'reinstalled' | 'updated';
 };
 
 export class AddonManager {
 	constructor(
 		private curseClient: CurseClient,
+		private supabase: SupabaseClient<Database>,
+		private userService: UserService,
 		private repository: AddonRepository,
 		private configRepository: ConfigRepository,
 	) {}
@@ -59,7 +65,10 @@ export class AddonManager {
 
 	public async updateAll(listener?: UpdateListener): Promise<void> {
 		// TODO - This method should throw if one of the updates fail?
-		const addons = await this.repository.getAll();
+		const addons = await this.supabase.from('addons').select();
+		if (addons.error !== null) {
+			throw addons.error;
+		}
 
 		const fireEvent = (event: UpdateEvent): void => {
 			if (listener !== undefined) {
@@ -70,41 +79,55 @@ export class AddonManager {
 		};
 
 		await Promise.all(
-			addons.map(async (addon) => {
-				fireEvent({ addonId: addon.id, gameVersion: addon.gameVersion, name: 'start' });
+			addons.data.map(async (addon) => {
+				fireEvent({ addonId: addon.slug, gameVersion: addon.game_version, name: 'start' });
 
 				try {
-					const installResult = await this.installByUrl(addon.id, addon.gameVersion);
-					if (installResult.status === 'updated') {
-						fireEvent({
-							addonId: addon.id,
-							gameVersion: addon.gameVersion,
-							name: 'updated',
-							fromVersion: addon.version,
-							toVersion: installResult.addon.version,
-						});
-						return;
+					const installResult = await this.installByUrl(addon.slug, addon.game_version);
+					switch (installResult.status) {
+						case 'installed': {
+							fireEvent({
+								addonId: addon.slug,
+								gameVersion: addon.game_version,
+								name: 'updated',
+								fromVersion: 'TODO',
+								toVersion: installResult.addon.version,
+							});
+							break;
+						}
+						case 'updated': {
+							fireEvent({
+								addonId: addon.slug,
+								gameVersion: addon.game_version,
+								name: 'updated',
+								fromVersion: 'TODO',
+								toVersion: installResult.addon.version,
+							});
+							break;
+						}
+						case 'reinstalled': {
+							fireEvent({
+								addonId: addon.slug,
+								gameVersion: addon.game_version,
+								name: 'reinstalled',
+								version: installResult.addon.version,
+							});
+							break;
+						}
+						case 'already-installed': {
+							fireEvent({
+								addonId: addon.slug,
+								gameVersion: addon.game_version,
+								name: 'already-up-to-date',
+								version: installResult.addon.version,
+							});
+							break;
+						}
 					}
-					if (installResult.status === 'reinstalled') {
-						fireEvent({
-							addonId: addon.id,
-							gameVersion: addon.gameVersion,
-							name: 'reinstalled',
-							version: installResult.addon.version,
-						});
-						return;
-					}
-
-					fireEvent({
-						addonId: addon.id,
-						gameVersion: addon.gameVersion,
-						name: 'already-up-to-date',
-						version: addon.version,
-					});
 				} catch (error) {
 					fireEvent({
-						addonId: addon.id,
-						gameVersion: addon.gameVersion,
+						addonId: addon.slug,
+						gameVersion: addon.game_version,
 						name: 'error',
 						reason: error,
 					});
@@ -113,7 +136,7 @@ export class AddonManager {
 		);
 	}
 
-	async remove(id: string, gameVersion: GameVersion): Promise<Addon | null> {
+	async remove(id: string, gameVersion: GameVersion): Promise<LocalAddon | null> {
 		const gameFolder = await this.configRepository.get('game.dir');
 		if (gameFolder === null) {
 			throw new Error('Config game.dir not defined');
@@ -129,7 +152,7 @@ export class AddonManager {
 
 		await Promise.all(
 			existingAddon.directories
-				.map((d) => path.join(addonsFolder, d.name))
+				.map((d) => path.join(addonsFolder, d))
 				.map(async (d) => {
 					await fs.rm(d, { recursive: true, force: true });
 				}),
@@ -141,6 +164,11 @@ export class AddonManager {
 	}
 
 	private async install(curseMod: CurseMod, gameVersion: GameVersion): Promise<InstalLResult> {
+		const user = await this.userService.getUser();
+		if (user == null) {
+			throw new Error('User not signed in');
+		}
+
 		const gameVersionTypeId = gameVersion === 'retail' ? 517 : 67408;
 		const fileIndex = curseMod.latestFilesIndexes.find(
 			(fi) =>
@@ -173,7 +201,7 @@ export class AddonManager {
 		if (await fs.exists(addonsFolder)) {
 			await Promise.all(
 				(existingAddon?.directories ?? [])
-					.map((d) => path.join(addonsFolder, d.name))
+					.map((d) => path.join(addonsFolder, d))
 					.map(async (d) => {
 						await fs.rm(d, { recursive: true, force: true });
 					}),
@@ -215,24 +243,47 @@ export class AddonManager {
 				}),
 		);
 
-		const installedAddon: Addon = {
+		const remoteAddon = await this.supabase
+			.from('addons')
+			.select()
+			.eq('game_version', gameVersion)
+			.eq('slug', curseMod.slug);
+		if (remoteAddon.error !== null) {
+			throw remoteAddon.error;
+		}
+		if (remoteAddon.data.length > 1) {
+			throw new Error('More than one addon found?');
+		}
+
+		if (remoteAddon.data.length === 0) {
+			const result = await this.supabase.from('addons').insert({
+				id: randomUUID(),
+				user_id: user.id,
+				slug: curseMod.slug,
+				game_version: gameVersion,
+				author: curseMod.authors[0]?.name ?? 'N/A',
+				name: curseMod.name,
+				provider: 'curse',
+				provider_id: String(curseMod.id),
+				url: `https://www.curseforge.com/wow/addons/${curseMod.slug}`,
+			});
+			if (result.error) {
+				console.log(result.error);
+				throw result.error;
+			}
+		}
+
+		const installedAddon: LocalAddon = {
 			id: curseMod.slug,
+			slug: curseMod.slug,
 			name: curseMod.name,
 			version: modFile.displayName,
 			author: curseMod.authors[0]?.name ?? 'N/A',
 			gameVersion: gameVersion,
-			directories: await Promise.all(
-				modFile.modules.map(async (module) => ({
-					name: module.name,
-					hash: null,
-				})),
-			),
-			provider: {
-				name: 'curse',
-				curseModId: curseMod.id,
-			},
-			installedAt: existingAddon?.installedAt ?? new Date().toISOString(),
-			updatedAt: existingAddon === null ? null : new Date().toISOString(),
+			directories: modFile.modules.map((module) => module.name),
+			provider: 'curse',
+			providerId: String(curseMod.id),
+			updatedAt: new Date().toISOString(),
 		};
 		await this.repository.save(installedAddon);
 
@@ -247,11 +298,11 @@ export class AddonManager {
 		};
 	}
 
-	private async isAddonInstallationValid(addon: Addon): Promise<boolean> {
+	private async isAddonInstallationValid(addon: LocalAddon): Promise<boolean> {
 		const addonsFolder = await this.getAddonsFolder(addon.gameVersion);
 		const validDirectories = await Promise.all(
 			addon.directories.map(async (addonDirectory) => {
-				const modulePath = path.join(addonsFolder, addonDirectory.name);
+				const modulePath = path.join(addonsFolder, addonDirectory);
 				return fs.exists(modulePath);
 			}),
 		);
