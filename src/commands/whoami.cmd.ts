@@ -1,7 +1,7 @@
 import { Command } from '@commander-js/extra-typings';
-import type { BaseCommand } from './cmd';
-import type { UserService } from '../user.service';
 import chalk from 'chalk';
+import type { UserService } from '../user.service';
+import type { BaseCommand } from './cmd';
 
 export class WhoamiCommand implements BaseCommand {
 	constructor(private userService: UserService) {}

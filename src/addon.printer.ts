@@ -1,5 +1,5 @@
-import type { LocalAddon } from './addon.repository';
 import { format } from 'date-fns';
+import type { LocalAddon } from './addon.repository';
 
 export class AddonPrinter {
 	print(addons: LocalAddon[]): void {

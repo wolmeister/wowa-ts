@@ -1,6 +1,7 @@
 import os from 'node:os';
 import path from 'node:path';
 import { program } from '@commander-js/extra-typings';
+import { createClient } from '@supabase/supabase-js';
 import { AddonManager } from './addon.manager';
 import { AddonPrinter } from './addon.printer';
 import { AddonRepository } from './addon.repository';
@@ -10,20 +11,19 @@ import { BackupCommand } from './commands/backup.cmd';
 import { ConfigCommand } from './commands/config.cmd';
 import { InstallCommand } from './commands/install.cmd';
 import { ListCommand } from './commands/list.cmd';
+import { LoginCommand } from './commands/login.cmd';
 import { RemoveCommand } from './commands/remove.cmd';
+import { SharedMediaSyncCommand } from './commands/shared-media-sync.cmd';
 import { UpdateCommand } from './commands/update.cmd';
+import { WhoamiCommand } from './commands/whoami.cmd';
 import { ConfigRepository } from './config.repository';
 import { CurseClient } from './curse.client';
 import { KeyValueStore } from './kv-store';
 import { KeyValueStoreRepository } from './kv-store.repository';
-import { SharedMediaSyncCommand } from './commands/shared-media-sync.cmd';
 import { SharedMediaManager } from './shared-media.manager';
-import { UserService } from './user.service';
-import { createClient } from '@supabase/supabase-js';
-import { SupabaseStorage } from './supabase.storage';
-import { WhoamiCommand } from './commands/whoami.cmd';
 import type { Database } from './supabase.db.types';
-import { LoginCommand } from './commands/login.cmd';
+import { SupabaseStorage } from './supabase.storage';
+import { UserService } from './user.service';
 
 function getKeyValueStorePath(): string {
 	const platform = os.platform();

@@ -1,8 +1,9 @@
+import { randomUUID } from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import AdmZip from 'adm-zip';
-import { randomUUID } from 'node:crypto';
-import type { LocalAddon, AddonRepository, GameVersion } from './addon.repository';
+import type { AddonRepository, GameVersion, LocalAddon } from './addon.repository';
 import type { ConfigRepository } from './config.repository';
 import {
 	type CurseClient,
@@ -11,7 +12,6 @@ import {
 	SearchModsSortField,
 	SearchModsSortOrder,
 } from './curse.client';
-import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from './supabase.db.types';
 import type { UserService } from './user.service';
 

@@ -1,12 +1,12 @@
-import { Command, Option } from '@commander-js/extra-typings';
-import ora from 'ora';
-import type { BaseCommand } from './cmd';
-import type { AddonRepository } from '../addon.repository';
-import type { ConfigRepository } from '../config.repository';
+import { exists, mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { setImmediate } from 'node:timers/promises';
-import { exists, mkdir, writeFile } from 'node:fs/promises';
+import { Command, Option } from '@commander-js/extra-typings';
+import ora from 'ora';
+import type { AddonRepository } from '../addon.repository';
+import type { ConfigRepository } from '../config.repository';
 import type { SharedMediaManager } from '../shared-media.manager';
+import type { BaseCommand } from './cmd';
 
 export class SharedMediaSyncCommand implements BaseCommand {
 	constructor(private sharedMediaManager: SharedMediaManager) {}

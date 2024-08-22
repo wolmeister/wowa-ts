@@ -1,7 +1,7 @@
+import { mkdir, readdir, writeFile } from 'node:fs/promises';
+import path from 'node:path';
 import type { AddonRepository, GameVersion } from './addon.repository';
 import type { ConfigRepository } from './config.repository';
-import path from 'node:path';
-import { mkdir, writeFile, readdir } from 'node:fs/promises';
 
 const mediaTypes = {
 	background: null,
