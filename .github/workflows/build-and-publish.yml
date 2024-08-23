@@ -27,6 +27,9 @@ jobs:
 
       - name: Build and compile
         run: bun run compile:linux
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_KEY }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
 
       - name: Publish
         uses: softprops/action-gh-release@v2
