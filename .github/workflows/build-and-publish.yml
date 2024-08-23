@@ -1,0 +1,32 @@
+name: Build and Publish
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup bun
+        uses: oven-sh/setup-bun@v2
+        run: bun install
+
+      - name: Lint
+        run: bun run lint
+
+      - name: Build and compile
+        run: bun run compile:linux
+
+      - name: Publish
+        uses: softprops/action-gh-release@v1
+        with:
+          files: dist/wowa
