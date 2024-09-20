@@ -1,3 +1,5 @@
+import got from 'got';
+
 // https://docs.curseforge.com/#tocS_Pagination
 export type Pagination = {
 	index: number;
@@ -282,16 +284,13 @@ export class CurseClient {
 			url.searchParams.set('sortOrder', SearchModsSortOrder.Asc ? 'asc' : 'desc');
 		}
 
-		const response = await fetch(url, {
+		const response = await got<SearchModsResponse>(url.toString(), {
+			responseType: 'json',
 			headers: {
 				'x-api-key': this.token,
 			},
 		});
-		if (response.ok === false) {
-			throw new Error(await response.text());
-		}
-		const json = await response.json();
-		return json;
+		return response.body;
 	}
 
 	async getModFile(modId: number, fileId: number): Promise<ModFileResponse> {
@@ -299,15 +298,15 @@ export class CurseClient {
 			throw new Error('Curse token not defined');
 		}
 
-		const response = await fetch(`https://api.curseforge.com/v1/mods/${modId}/files/${fileId}`, {
-			headers: {
-				'x-api-key': this.token,
+		const response = await got<ModFileResponse>(
+			`https://api.curseforge.com/v1/mods/${modId}/files/${fileId}`,
+			{
+				responseType: 'json',
+				headers: {
+					'x-api-key': this.token,
+				},
 			},
-		});
-		if (response.ok === false) {
-			throw new Error(await response.text());
-		}
-		const json = await response.json();
-		return json;
+		);
+		return response.body;
 	}
 }

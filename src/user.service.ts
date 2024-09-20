@@ -1,11 +1,21 @@
 import type { SupabaseClient, User } from '@supabase/supabase-js';
+import { Mutex } from 'async-mutex';
 
 export class UserService {
+	private readonly getUserMutex = new Mutex();
+	private cachedUser: User | null = null;
+
 	constructor(private supabaseClient: SupabaseClient) {}
 
 	async getUser(): Promise<User | null> {
-		const userResponse = await this.supabaseClient.auth.getUser();
-		return userResponse.data.user;
+		return this.getUserMutex.runExclusive(async () => {
+			if (this.cachedUser !== null) {
+				return this.cachedUser;
+			}
+			const userResponse = await this.supabaseClient.auth.getUser();
+			this.cachedUser = userResponse.data.user;
+			return this.cachedUser;
+		});
 	}
 
 	async sendLoginEmail(email: string): Promise<void> {

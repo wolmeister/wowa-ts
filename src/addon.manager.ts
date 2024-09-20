@@ -3,6 +3,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import AdmZip from 'adm-zip';
+import got from 'got';
 import type { AddonRepository, GameVersion, LocalAddon } from './addon.repository';
 import type { ConfigRepository } from './config.repository';
 import {
@@ -193,10 +194,9 @@ export class AddonManager {
 			}
 		}
 
-		const response = await fetch(modFile.downloadUrl);
-		if (response.body === null) {
-			throw new Error('Failed to fetch addon file');
-		}
+		const response = await got(modFile.downloadUrl, {
+			responseType: 'buffer',
+		});
 
 		if (await fs.exists(addonsFolder)) {
 			await Promise.all(
@@ -210,8 +210,7 @@ export class AddonManager {
 			await fs.mkdir(addonsFolder, { recursive: true });
 		}
 
-		const arrayBuffer = await response.arrayBuffer();
-		const buffer = Buffer.from(arrayBuffer);
+		const buffer = response.body;
 		const zip = new AdmZip(buffer);
 		const zipEntries = zip.getEntries();
 
