@@ -3,17 +3,17 @@ import type { ConfigRepository } from './config.repository';
 import type { KeyValueStore } from './kv-store';
 
 export class SupabaseStorage implements SupportedStorage {
-	constructor(private kvStore: KeyValueStore) {}
+  constructor(private kvStore: KeyValueStore) {}
 
-	getItem(key: string): Promise<string | null> {
-		return this.kvStore.get(['supabase', 'auth', key]);
-	}
+  getItem(key: string): Promise<string | null> {
+    return this.kvStore.get(['supabase', 'auth', key]);
+  }
 
-	setItem(key: string, value: string): Promise<void> {
-		return this.kvStore.set(['supabase', 'auth', key], value);
-	}
+  setItem(key: string, value: string): Promise<void> {
+    return this.kvStore.set(['supabase', 'auth', key], value);
+  }
 
-	removeItem(key: string): Promise<void> {
-		return this.kvStore.set(['supabase', 'auth', key], null);
-	}
+  removeItem(key: string): Promise<void> {
+    return this.kvStore.set(['supabase', 'auth', key], null);
+  }
 }

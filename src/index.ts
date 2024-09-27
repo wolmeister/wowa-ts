@@ -1,12 +1,11 @@
-import os from 'node:os';
-import path from 'node:path';
 import { program } from '@commander-js/extra-typings';
 import { createClient } from '@supabase/supabase-js';
+import os from 'node:os';
+import path from 'node:path';
 import { version } from '../package.json';
 import { AddonManager } from './addon.manager';
 import { AddonPrinter } from './addon.printer';
 import { AddonRepository } from './addon.repository';
-import { addonRepositoryMigrations } from './addon.repository.migrations';
 import { BackupManager } from './backup.manager';
 import { BackupCommand } from './commands/backup.cmd';
 import { ConfigCommand } from './commands/config.cmd';
@@ -28,19 +27,19 @@ import { SupabaseStorage } from './supabase.storage';
 import { UserService } from './user.service';
 
 function getKeyValueStorePath(): string {
-	const platform = os.platform();
-	const homedir = os.homedir();
-	switch (platform) {
-		case 'darwin':
-			return path.join(homedir, 'Library/Application Support/wowa/wowa.json');
-		case 'linux':
-			return path.join(homedir, '.config/wowa/wowa.json');
-		case 'win32':
-			return path.join(homedir, 'AppData/Roaming/wowa/wowa.json');
-		default: {
-			throw new Error(`Unsupported operating system: ${platform}`);
-		}
-	}
+  const platform = os.platform();
+  const homedir = os.homedir();
+  switch (platform) {
+    case 'darwin':
+      return path.join(homedir, 'Library/Application Support/wowa/wowa.json');
+    case 'linux':
+      return path.join(homedir, '.config/wowa/wowa.json');
+    case 'win32':
+      return path.join(homedir, 'AppData/Roaming/wowa/wowa.json');
+    default: {
+      throw new Error(`Unsupported operating system: ${platform}`);
+    }
+  }
 }
 
 const kvStore = new KeyValueStore();
@@ -52,27 +51,27 @@ const addonRepository = new AddonRepository(new KeyValueStoreRepository(kvStore,
 const curseClient = new CurseClient();
 const curseToken = await configRepository.get('curse.token');
 if (curseToken !== null) {
-	curseClient.setToken(curseToken);
+  curseClient.setToken(curseToken);
 }
 
 const supabaseClient = createClient<Database>(
-	process.env.SUPABASE_URL ?? '',
-	process.env.SUPABASE_KEY ?? '',
-	{
-		auth: {
-			storage: new SupabaseStorage(kvStore),
-		},
-	},
+  process.env.SUPABASE_URL ?? '',
+  process.env.SUPABASE_KEY ?? '',
+  {
+    auth: {
+      storage: new SupabaseStorage(kvStore),
+    },
+  },
 );
 
 const userService = new UserService(supabaseClient);
 
 const addonManager = new AddonManager(
-	curseClient,
-	supabaseClient,
-	userService,
-	addonRepository,
-	configRepository,
+  curseClient,
+  supabaseClient,
+  userService,
+  addonRepository,
+  configRepository,
 );
 const addonPrinter = new AddonPrinter();
 const backupManager = new BackupManager(configRepository);
