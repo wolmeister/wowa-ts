@@ -17,6 +17,7 @@ all: $(LINUX_OUTPUT) $(WIN_OUTPUT)
 
 $(LINUX_OUTPUT): $(TS_FILES)
 	bun build --compile --minify --bytecode --target=bun-linux-x64-modern --outfile $@ src/index.ts
+	chmod +x $(LINUX_OUTPUT)
 
 $(WIN_OUTPUT): $(TS_FILES)
 	bun build --compile --minify --bytecode --target=bun-windows-x64-modern --outfile $@ src/index.ts
