@@ -34,4 +34,6 @@ jobs:
       - name: Publish
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/wowa*
+          files: |
+            dist/wowa-linux64
+            dist/wowa-win64.exe
