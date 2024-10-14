@@ -15,14 +15,11 @@ export class LoginCommand implements BaseCommand {
         return;
       }
 
-      const { type } = await prompt<{ type: 'signin' | 'signup' }>({
+      const { type } = await prompt<{ type: string }>({
         type: 'select',
-        name: 'email',
+        name: 'type',
         message: 'Do you want to login to an existing account or create a new one?',
-        choices: [
-          { name: 'Create a new account', value: 'signin' },
-          { name: 'Login to an existing account', value: 'signup' },
-        ],
+        choices: [{ name: 'Create a new account' }, { name: 'Login to an existing account' }],
       });
 
       const { email } = await prompt<{ email: string }>({
@@ -36,7 +33,7 @@ export class LoginCommand implements BaseCommand {
         message: 'What is your password?',
       });
 
-      if (type === 'signin') {
+      if (type.startsWith('Login')) {
         await this.userService.signin(email, password);
       } else {
         await this.userService.signup(email, password);
