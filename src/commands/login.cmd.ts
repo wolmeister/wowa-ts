@@ -15,21 +15,32 @@ export class LoginCommand implements BaseCommand {
         return;
       }
 
-      const response = await prompt<{ email: string }>({
+      const { type } = await prompt<{ type: 'signin' | 'signup' }>({
+        type: 'select',
+        name: 'email',
+        message: 'Do you want to login to an existing account or create a new one?',
+        choices: [
+          { name: 'Create a new account', value: 'signin' },
+          { name: 'Login to an existing account', value: 'signup' },
+        ],
+      });
+
+      const { email } = await prompt<{ email: string }>({
         type: 'input',
         name: 'email',
         message: 'What is your email?',
       });
-
-      await this.userService.sendLoginEmail(response.email);
-
-      const otpResponse = await prompt<{ otp: string }>({
-        type: 'input',
-        name: 'otp',
-        message: `Please enter the code sent to ${response.email}`,
+      const { password } = await prompt<{ password: string }>({
+        type: 'password',
+        name: 'password',
+        message: 'What is your password?',
       });
 
-      await this.userService.finishEmailLogin(response.email, otpResponse.otp);
+      if (type === 'signin') {
+        await this.userService.signin(email, password);
+      } else {
+        await this.userService.signup(email, password);
+      }
     });
   }
 }

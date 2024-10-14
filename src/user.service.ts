@@ -1,6 +1,8 @@
 import type { SupabaseClient, User } from '@supabase/supabase-js';
 import { Mutex } from 'async-mutex';
 
+// TODO: Support password only.
+
 export class UserService {
   private readonly getUserMutex = new Mutex();
   private cachedUser: User | null = null;
@@ -18,17 +20,24 @@ export class UserService {
     });
   }
 
-  async sendLoginEmail(email: string): Promise<void> {
-    await this.supabaseClient.auth.signInWithOtp({
+  async signin(email: string, password: string): Promise<User> {
+    const authResponse = await this.supabaseClient.auth.signInWithPassword({
       email,
+      password,
     });
+    if (authResponse.error !== null) {
+      throw authResponse.error;
+    }
+    if (authResponse.data.user == null) {
+      throw new Error('User not found');
+    }
+    return authResponse.data.user;
   }
 
-  async finishEmailLogin(email: string, token: string): Promise<User> {
-    const authResponse = await this.supabaseClient.auth.verifyOtp({
-      type: 'email',
+  async signup(email: string, password: string): Promise<User> {
+    const authResponse = await this.supabaseClient.auth.signUp({
       email,
-      token,
+      password,
     });
     if (authResponse.error !== null) {
       throw authResponse.error;

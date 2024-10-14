@@ -1,7 +1,7 @@
-import { program } from '@commander-js/extra-typings';
-import { createClient } from '@supabase/supabase-js';
 import os from 'node:os';
 import path from 'node:path';
+import { program } from '@commander-js/extra-typings';
+import { createClient } from '@supabase/supabase-js';
 import { version } from '../package.json';
 import { AddonManager } from './addon.manager';
 import { AddonPrinter } from './addon.printer';
@@ -42,61 +42,65 @@ function getKeyValueStorePath(): string {
   }
 }
 
-const kvStore = new KeyValueStore();
-await kvStore.init(getKeyValueStorePath());
+async function main(): Promise<void> {
+  const kvStore = new KeyValueStore();
+  await kvStore.init(getKeyValueStorePath());
 
-const configRepository = new ConfigRepository(kvStore);
-const addonRepository = new AddonRepository(new KeyValueStoreRepository(kvStore, 1, []));
+  const configRepository = new ConfigRepository(kvStore);
+  const addonRepository = new AddonRepository(new KeyValueStoreRepository(kvStore, 1, []));
 
-const curseClient = new CurseClient();
-const curseToken = await configRepository.get('curse.token');
-if (curseToken !== null) {
-  curseClient.setToken(curseToken);
+  const curseClient = new CurseClient();
+  const curseToken = await configRepository.get('curse.token');
+  if (curseToken !== null) {
+    curseClient.setToken(curseToken);
+  }
+
+  const supabaseClient = createClient<Database>(
+    process.env.SUPABASE_URL ?? '',
+    process.env.SUPABASE_KEY ?? '',
+    {
+      auth: {
+        storage: new SupabaseStorage(kvStore),
+      },
+    },
+  );
+
+  const userService = new UserService(supabaseClient);
+
+  const addonManager = new AddonManager(
+    curseClient,
+    supabaseClient,
+    userService,
+    addonRepository,
+    configRepository,
+  );
+  const addonPrinter = new AddonPrinter();
+  const backupManager = new BackupManager(configRepository);
+  const sharedMediaManager = new SharedMediaManager(addonRepository, configRepository);
+
+  const installCommand = new InstallCommand(addonManager);
+  const updateCommand = new UpdateCommand(addonManager);
+  const removeCommand = new RemoveCommand(addonManager);
+  const listCommand = new ListCommand(addonRepository, addonPrinter);
+  const configCommand = new ConfigCommand(kvStore);
+  const backupCommand = new BackupCommand(backupManager);
+  const sharedMediaSyncCommand = new SharedMediaSyncCommand(sharedMediaManager);
+  const loginCommand = new LoginCommand(userService);
+  const whoamiCommand = new WhoamiCommand(userService);
+  const selfUpdateCommand = new SelfUpdateCommand();
+
+  program.addCommand(installCommand.buildCommand());
+  program.addCommand(updateCommand.buildCommand());
+  program.addCommand(removeCommand.buildCommand());
+  program.addCommand(listCommand.buildCommand());
+  program.addCommand(configCommand.buildCommand());
+  program.addCommand(backupCommand.buildCommand());
+  program.addCommand(sharedMediaSyncCommand.buildCommand());
+  program.addCommand(loginCommand.buildCommand());
+  program.addCommand(whoamiCommand.buildCommand());
+  program.addCommand(selfUpdateCommand.buildCommand());
+  program.version(version);
+  program.parse();
 }
 
-const supabaseClient = createClient<Database>(
-  process.env.SUPABASE_URL ?? '',
-  process.env.SUPABASE_KEY ?? '',
-  {
-    auth: {
-      storage: new SupabaseStorage(kvStore),
-    },
-  },
-);
-
-const userService = new UserService(supabaseClient);
-
-const addonManager = new AddonManager(
-  curseClient,
-  supabaseClient,
-  userService,
-  addonRepository,
-  configRepository,
-);
-const addonPrinter = new AddonPrinter();
-const backupManager = new BackupManager(configRepository);
-const sharedMediaManager = new SharedMediaManager(addonRepository, configRepository);
-
-const installCommand = new InstallCommand(addonManager);
-const updateCommand = new UpdateCommand(addonManager);
-const removeCommand = new RemoveCommand(addonManager);
-const listCommand = new ListCommand(addonRepository, addonPrinter);
-const configCommand = new ConfigCommand(kvStore);
-const backupCommand = new BackupCommand(backupManager);
-const sharedMediaSyncCommand = new SharedMediaSyncCommand(sharedMediaManager);
-const loginCommand = new LoginCommand(userService);
-const whoamiCommand = new WhoamiCommand(userService);
-const selfUpdateCommand = new SelfUpdateCommand();
-
-program.addCommand(installCommand.buildCommand());
-program.addCommand(updateCommand.buildCommand());
-program.addCommand(removeCommand.buildCommand());
-program.addCommand(listCommand.buildCommand());
-program.addCommand(configCommand.buildCommand());
-program.addCommand(backupCommand.buildCommand());
-program.addCommand(sharedMediaSyncCommand.buildCommand());
-program.addCommand(loginCommand.buildCommand());
-program.addCommand(whoamiCommand.buildCommand());
-program.addCommand(selfUpdateCommand.buildCommand());
-program.version(version);
-program.parse();
+main();
