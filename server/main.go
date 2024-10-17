@@ -317,6 +317,7 @@ func main() {
 	r.HandleFunc("/health", healthHandler).Methods("GET")
 	http.Handle("/", r)
 
-	log.Println("Server started at :8888")
-	log.Fatal(http.ListenAndServe(":8888", nil))
+	address := "0.0.0.0:8888"
+	log.Println("Server started at", address)
+	log.Fatal(http.ListenAndServe(address, nil))
 }

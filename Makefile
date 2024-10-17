@@ -15,9 +15,6 @@ TEMP_LINT_FILE = $(DST_FOLDER)/.lint_timestamp
 # Targets
 all: $(LINUX_OUTPUT) $(WIN_OUTPUT)
 
-$(DST_FOLDER):
-	mkdir -p $(DST_FOLDER)
-
 $(LINUX_OUTPUT): $(TS_FILES)
 	bun build --compile --minify --bytecode --target=bun-linux-x64-modern --outfile $@ src/index.ts
 
@@ -33,6 +30,7 @@ lint: $(TEMP_LINT_FILE)
 
 $(TEMP_LINT_FILE): $(TS_FILES)
 	bunx @biomejs/biome check ./src --apply-unsafe --verbose && bunx tsc
+	@mkdir -p $(DST_FOLDER)
 	@touch $@
 
 # Clean target
