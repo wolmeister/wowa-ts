@@ -13,5 +13,6 @@ FROM alpine:latest
 
 WORKDIR /root/
 COPY --from=builder /app/wowa-server .
+EXPOSE 8888
 
 CMD ["./wowa-server"]
