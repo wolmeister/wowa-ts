@@ -1,50 +1,34 @@
-import type { SupabaseClient, User } from '@supabase/supabase-js';
-import { Mutex } from 'async-mutex';
-
-// TODO: Support password only.
+import got from 'got';
+import type { ConfigRepository } from './config.repository';
 
 export class UserService {
-  private readonly getUserMutex = new Mutex();
-  private cachedUser: User | null = null;
+  constructor(
+    private configRepository: ConfigRepository,
+    private apiUrl: string,
+  ) {}
 
-  constructor(private supabaseClient: SupabaseClient) {}
-
-  async getUser(): Promise<User | null> {
-    return this.getUserMutex.runExclusive(async () => {
-      if (this.cachedUser !== null) {
-        return this.cachedUser;
-      }
-      const userResponse = await this.supabaseClient.auth.getUser();
-      this.cachedUser = userResponse.data.user;
-      return this.cachedUser;
-    });
+  async getUserToken(): Promise<string | null> {
+    return this.configRepository.get('auth.token');
   }
 
-  async signin(email: string, password: string): Promise<User> {
-    const authResponse = await this.supabaseClient.auth.signInWithPassword({
-      email,
-      password,
-    });
-    if (authResponse.error !== null) {
-      throw authResponse.error;
+  async getUserEmail(): Promise<string | null> {
+    const token = await this.getUserToken();
+    if (token == null) {
+      return null;
     }
-    if (authResponse.data.user == null) {
-      throw new Error('User not found');
-    }
-    return authResponse.data.user;
+    const stringPayload = Buffer.from(token.split('.')[1], 'base64').toString('utf-8');
+    const payload = JSON.parse(stringPayload);
+    return payload.email;
   }
 
-  async signup(email: string, password: string): Promise<User> {
-    const authResponse = await this.supabaseClient.auth.signUp({
-      email,
-      password,
+  async signin(email: string, password: string): Promise<void> {
+    const authResponse = await got.post({
+      url: `${this.apiUrl}/login`,
+      body: JSON.stringify({ email, password }),
+      headers: {
+        'Content-Type': 'application/json',
+      },
     });
-    if (authResponse.error !== null) {
-      throw authResponse.error;
-    }
-    if (authResponse.data.user == null) {
-      throw new Error('User not found');
-    }
-    return authResponse.data.user;
+    await this.configRepository.set('auth.token', authResponse.body);
   }
 }

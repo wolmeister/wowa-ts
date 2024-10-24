@@ -1,14 +1,15 @@
 import os from 'node:os';
 import path from 'node:path';
 import { program } from '@commander-js/extra-typings';
-import { createClient } from '@supabase/supabase-js';
 import { version } from '../package.json';
 import { AddonManager } from './addon.manager';
 import { AddonPrinter } from './addon.printer';
+import { AddonRemoteRepository } from './addon.remote-repository';
 import { AddonRepository } from './addon.repository';
 import { BackupManager } from './backup.manager';
 import { BackupCommand } from './commands/backup.cmd';
 import { ConfigCommand } from './commands/config.cmd';
+import { ExportCommand } from './commands/export.cmd';
 import { InstallCommand } from './commands/install.cmd';
 import { ListCommand } from './commands/list.cmd';
 import { LoginCommand } from './commands/login.cmd';
@@ -22,8 +23,6 @@ import { CurseClient } from './curse.client';
 import { KeyValueStore } from './kv-store';
 import { KeyValueStoreRepository } from './kv-store.repository';
 import { SharedMediaManager } from './shared-media.manager';
-import type { Database } from './supabase.db.types';
-import { SupabaseStorage } from './supabase.storage';
 import { UserService } from './user.service';
 
 function getKeyValueStorePath(): string {
@@ -55,23 +54,18 @@ async function main(): Promise<void> {
     curseClient.setToken(curseToken);
   }
 
-  const supabaseClient = createClient<Database>(
-    process.env.SUPABASE_URL ?? '',
-    process.env.SUPABASE_KEY ?? '',
-    {
-      auth: {
-        storage: new SupabaseStorage(kvStore),
-      },
-    },
-  );
-
-  const userService = new UserService(supabaseClient);
+  if (process.env.API_URL === undefined) {
+    console.error('Env variable API_URL not provided');
+    process.exit(1);
+  }
+  const userService = new UserService(configRepository, process.env.API_URL);
+  const remoteAddonRepository = new AddonRemoteRepository(userService, process.env.API_URL);
 
   const addonManager = new AddonManager(
     curseClient,
-    supabaseClient,
     userService,
     addonRepository,
+    remoteAddonRepository,
     configRepository,
   );
   const addonPrinter = new AddonPrinter();
@@ -88,6 +82,7 @@ async function main(): Promise<void> {
   const loginCommand = new LoginCommand(userService);
   const whoamiCommand = new WhoamiCommand(userService);
   const selfUpdateCommand = new SelfUpdateCommand();
+  const exportCommand = new ExportCommand(addonRepository);
 
   program.addCommand(installCommand.buildCommand());
   program.addCommand(updateCommand.buildCommand());
@@ -99,6 +94,7 @@ async function main(): Promise<void> {
   program.addCommand(loginCommand.buildCommand());
   program.addCommand(whoamiCommand.buildCommand());
   program.addCommand(selfUpdateCommand.buildCommand());
+  program.addCommand(exportCommand.buildCommand());
   program.version(version);
   program.parse();
 }

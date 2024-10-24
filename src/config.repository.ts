@@ -1,6 +1,6 @@
 import type { KeyValueStore } from './kv-store';
 
-export type Config = 'curse.token' | 'game.dir';
+export type Config = 'curse.token' | 'game.dir' | 'auth.token';
 
 export class ConfigRepository {
   constructor(private kvStore: KeyValueStore) {}

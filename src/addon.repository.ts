@@ -1,5 +1,20 @@
 import type { KeyValueStoreRepository } from './kv-store.repository';
 
+// [document version (1 byte)]
+// [id length (1 byte)] [id bytes]
+// [name length (1 byte)] [name bytes]
+// [slug length (1 byte)] [slug bytes]
+// [author length (1 byte)] [author bytes]
+// [version length (1 byte)] [version bytes]
+// [gameVersion (1 byte)]
+// [directories length (1 byte)]
+//   [directory 1 length (1 byte)] [directory 1 bytes]
+//   [directory 2 length (1 byte)] [directory 2 bytes]
+//   ...
+// [provider type (1 byte)]
+// [providerId length (1 byte)] [providerId bytes]
+// [updatedAt length (1 byte)] [updatedAt bytes]
+
 export type GameVersion = 'retail' | 'classic';
 
 export type LocalAddon = {

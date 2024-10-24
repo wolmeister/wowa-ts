@@ -1,9 +1,8 @@
-import { randomUUID } from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import type { SupabaseClient } from '@supabase/supabase-js';
 import AdmZip from 'adm-zip';
 import got from 'got';
+import type { AddonRemoteRepository } from './addon.remote-repository';
 import type { AddonRepository, GameVersion, LocalAddon } from './addon.repository';
 import type { ConfigRepository } from './config.repository';
 import {
@@ -13,7 +12,6 @@ import {
   SearchModsSortField,
   SearchModsSortOrder,
 } from './curse.client';
-import type { Database } from './supabase.db.types';
 import type { UserService } from './user.service';
 
 export type UpdateEvent = { addonId: string; gameVersion: GameVersion } & (
@@ -34,9 +32,9 @@ export type InstalLResult = {
 export class AddonManager {
   constructor(
     private curseClient: CurseClient,
-    private supabase: SupabaseClient<Database>,
     private userService: UserService,
     private repository: AddonRepository,
+    private remoteRepository: AddonRemoteRepository,
     private configRepository: ConfigRepository,
   ) {}
 
@@ -66,10 +64,7 @@ export class AddonManager {
 
   public async updateAll(listener?: UpdateListener): Promise<void> {
     // TODO - This method should throw if one of the updates fail?
-    const addons = await this.supabase.from('addons').select();
-    if (addons.error !== null) {
-      throw addons.error;
-    }
+    const addons = await this.remoteRepository.getAddons();
 
     const fireEvent = (event: UpdateEvent): void => {
       if (listener !== undefined) {
@@ -80,7 +75,7 @@ export class AddonManager {
     };
 
     await Promise.all(
-      addons.data.map(async (addon) => {
+      addons.map(async (addon) => {
         fireEvent({ addonId: addon.slug, gameVersion: addon.game_version, name: 'start' });
 
         try {
@@ -160,13 +155,14 @@ export class AddonManager {
     );
 
     await this.repository.delete(id, gameVersion);
+    await this.remoteRepository.deleteAddon(existingAddon.slug, existingAddon.gameVersion);
 
     return existingAddon;
   }
 
   private async install(curseMod: CurseMod, gameVersion: GameVersion): Promise<InstalLResult> {
-    const user = await this.userService.getUser();
-    if (user == null) {
+    const email = await this.userService.getUserEmail();
+    if (email == null) {
       throw new Error('User not signed in');
     }
 
@@ -242,34 +238,18 @@ export class AddonManager {
         }),
     );
 
-    const remoteAddon = await this.supabase
-      .from('addons')
-      .select()
-      .eq('game_version', gameVersion)
-      .eq('slug', curseMod.slug);
-    if (remoteAddon.error !== null) {
-      throw remoteAddon.error;
-    }
-    if (remoteAddon.data.length > 1) {
-      throw new Error('More than one addon found?');
-    }
+    const remoteAddon = await this.remoteRepository.getAddon(curseMod.slug, gameVersion);
 
-    if (remoteAddon.data.length === 0) {
-      const result = await this.supabase.from('addons').insert({
-        id: randomUUID(),
-        user_id: user.id,
+    if (remoteAddon === null) {
+      const result = await this.remoteRepository.createAddon({
         slug: curseMod.slug,
         game_version: gameVersion,
         author: curseMod.authors[0]?.name ?? 'N/A',
         name: curseMod.name,
         provider: 'curse',
-        provider_id: String(curseMod.id),
+        external_id: String(curseMod.id),
         url: `https://www.curseforge.com/wow/addons/${curseMod.slug}`,
       });
-      if (result.error) {
-        console.log(result.error);
-        throw result.error;
-      }
     }
 
     const installedAddon: LocalAddon = {

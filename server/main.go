@@ -117,8 +117,9 @@ func loginHandler(db *gorm.DB, validate *validator.Validate) http.HandlerFunc {
 		}
 
 		token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-			"sub": user.Id,
-			"exp": time.Now().AddDate(1, 0, 0).Unix(),
+			"sub":   user.Id,
+			"exp":   time.Now().AddDate(1, 0, 0).Unix(),
+			"email": user.Email,
 		})
 		tokenString, err := token.SignedString([]byte(os.Getenv("JWT_KEY")))
 		if err != nil {

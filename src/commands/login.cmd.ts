@@ -9,18 +9,11 @@ export class LoginCommand implements BaseCommand {
 
   buildCommand(): Command {
     return new Command('login').description('Login to your wowa account').action(async () => {
-      const user = await this.userService.getUser();
-      if (user !== null) {
-        console.log(`You are already signed in as ${chalk.blueBright(user.email)}`);
+      const currentEmail = await this.userService.getUserEmail();
+      if (currentEmail !== null) {
+        console.log(`You are already signed in as ${chalk.blueBright(currentEmail)}`);
         return;
       }
-
-      const { type } = await prompt<{ type: string }>({
-        type: 'select',
-        name: 'type',
-        message: 'Do you want to login to an existing account or create a new one?',
-        choices: [{ name: 'Create a new account' }, { name: 'Login to an existing account' }],
-      });
 
       const { email } = await prompt<{ email: string }>({
         type: 'input',
@@ -33,11 +26,7 @@ export class LoginCommand implements BaseCommand {
         message: 'What is your password?',
       });
 
-      if (type.startsWith('Login')) {
-        await this.userService.signin(email, password);
-      } else {
-        await this.userService.signup(email, password);
-      }
+      await this.userService.signin(email, password);
     });
   }
 }

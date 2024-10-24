@@ -10,12 +10,13 @@ export class WhoamiCommand implements BaseCommand {
     return new Command('whoami')
       .description('Display the user email currently logged in')
       .action(async () => {
-        const user = await this.userService.getUser();
-        if (user === null) {
+        const email = await this.userService.getUserEmail();
+        if (email === null) {
           console.log(chalk.hex('#FFA500')('null'));
           return;
         }
-        console.log(chalk.blueBright(user.email));
+
+        console.log(chalk.blueBright(email));
       });
   }
 }
