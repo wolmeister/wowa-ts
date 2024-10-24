@@ -28,8 +28,7 @@ jobs:
       - name: Build and compile
         run: make
         env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          API_URL: ${{ secrets.API_URL }}
 
       - name: Publish
         uses: softprops/action-gh-release@v2
