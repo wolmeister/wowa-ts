@@ -1,4 +1,4 @@
-import { exists, rename, rm, writeFile } from 'node:fs/promises';
+import { chmod, exists, rename, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import { Command } from '@commander-js/extra-typings';
 import got from 'got';
@@ -66,6 +66,7 @@ export class SelfUpdateCommand implements BaseCommand {
 
           await rename(process.execPath, `${process.execPath}.backup`);
           await writeFile(process.execPath, buffer);
+          await chmod(process.execPath, 0o755);
 
           spinner.succeed(`updated wowa to ${latestVersion}`);
         } catch (e) {
