@@ -30,11 +30,11 @@ function getKeyValueStorePath(): string {
   const homedir = os.homedir();
   switch (platform) {
     case 'darwin':
-      return path.join(homedir, 'Library/Application Support/wowa/wowa.json');
+      return path.join(homedir, 'Library', 'Application Support', 'wowa', 'wowa.json');
     case 'linux':
-      return path.join(homedir, '.config/wowa/wowa.json');
+      return path.join(homedir, '.config', 'wowa', 'wowa.json');
     case 'win32':
-      return path.join(homedir, 'AppData/Roaming/wowa/wowa.json');
+      return path.join(homedir, 'AppData', 'Roaming', 'wowa', 'wowa.json');
     default: {
       throw new Error(`Unsupported operating system: ${platform}`);
     }

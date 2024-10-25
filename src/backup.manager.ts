@@ -14,7 +14,7 @@ export class BackupManager {
     }
 
     const versionFolder = gameVersion === 'classic' ? '_classic_era_' : '_retail_';
-    const wtfFolder = path.join(gameFolder, `${versionFolder}/WTF`);
+    const wtfFolder = path.join(gameFolder, versionFolder, 'WTF');
 
     return wtfFolder;
   }
@@ -26,7 +26,7 @@ export class BackupManager {
     }
 
     const versionFolder = gameVersion === 'classic' ? '_classic_era_' : '_retail_';
-    const wtfFolder = path.join(gameFolder, `${versionFolder}/WTF_backup`);
+    const wtfFolder = path.join(gameFolder, versionFolder, 'WTF_backup');
 
     return wtfFolder;
   }

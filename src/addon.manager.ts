@@ -144,7 +144,7 @@ export class AddonManager {
     }
 
     const versionFolder = gameVersion === 'classic' ? '_classic_era_' : '_retail_';
-    const addonsFolder = path.join(gameFolder, `${versionFolder}/Interface/AddOns`);
+    const addonsFolder = path.join(gameFolder, versionFolder, 'Interface', 'AddOns');
 
     await Promise.all(
       existingAddon.directories
@@ -295,7 +295,7 @@ export class AddonManager {
     }
 
     const versionFolder = gameVersion === 'classic' ? '_classic_era_' : '_retail_';
-    const addonsFolder = path.join(gameFolder, `${versionFolder}/Interface/AddOns`);
+    const addonsFolder = path.join(gameFolder, versionFolder, 'Interface', 'AddOns');
 
     return addonsFolder;
   }
