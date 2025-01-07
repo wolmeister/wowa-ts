@@ -1,7 +1,0 @@
-{
-	"editor.defaultFormatter": "biomejs.biome",
-	"cSpell.words": ["sharedmedia"],
-	"[yaml]": {
-		"editor.defaultFormatter": "esbenp.prettier-vscode"
-	}
-}
