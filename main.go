@@ -51,6 +51,8 @@ func main() {
 	}
 	var configRepository = NewConfigRepository(kvStore)
 	var userManager = NewUserManager(configRepository, apiUrl)
+	var remoteAddonRepository = NewRemoteAddonRepository(userManager, apiUrl)
+	var localAddonRepository = NewLocalAddonRepository(kvStore)
 
 	var rootCmd = &cobra.Command{
 		Use:     "wowa",
