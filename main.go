@@ -51,8 +51,25 @@ func main() {
 	}
 	var configRepository = NewConfigRepository(kvStore)
 	var userManager = NewUserManager(configRepository, apiUrl)
-	var remoteAddonRepository = NewRemoteAddonRepository(userManager, apiUrl)
-	var localAddonRepository = NewLocalAddonRepository(kvStore)
+	//var remoteAddonRepository = NewRemoteAddonRepository(userManager, apiUrl)
+	//var localAddonRepository = NewLocalAddonRepository(kvStore)
+
+	curseToken, err := configRepository.Get(CurseToken)
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
+
+	log.Println("Curse Token:", curseToken)
+
+	var addonSearcher = NewAddonSearcher(curseToken)
+	var addonManager = NewAddonManager(addonSearcher)
+
+	_, err = addonManager.Install("details", Retail)
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
 
 	var rootCmd = &cobra.Command{
 		Use:     "wowa",

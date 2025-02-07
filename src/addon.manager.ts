@@ -43,7 +43,7 @@ export class AddonManager {
 
     const searchModsResponse = await this.curseClient.searchMods({
       gameId: 1,
-      gameVersionTypeId: gameVersion === 'retail' ? 517 : 67408,
+        gameVersionTypeId: gameVersion === 'retail' ? 517 : 67408,
       slug: slug,
       index: 0,
       sortField: SearchModsSortField.Popularity,
