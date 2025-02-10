@@ -1,11 +1,8 @@
 package main
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
-	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
@@ -24,14 +21,15 @@ type AddonSearchResult struct {
 }
 
 type AddonSearcher struct {
+	httpClient *HTTPClient
 	curseToken string
 }
 
-func NewAddonSearcher(curseToken string) *AddonSearcher {
-	return &AddonSearcher{curseToken: curseToken}
+func NewAddonSearcher(httpClient *HTTPClient, curseToken string) *AddonSearcher {
+	return &AddonSearcher{httpClient: httpClient, curseToken: curseToken}
 }
 
-func (ad *AddonSearcher) parseCurseSlug(idOrUrl string) string {
+func (as *AddonSearcher) parseCurseSlug(idOrUrl string) string {
 	// Check if the ID starts with "cf:"
 	if strings.HasPrefix(idOrUrl, "cf:") {
 		return strings.TrimPrefix(idOrUrl, "cf:")
@@ -51,49 +49,7 @@ func (ad *AddonSearcher) parseCurseSlug(idOrUrl string) string {
 	return ""
 }
 
-func (ad *AddonSearcher) curseSearch(slug string, gameVersion GameVersion) (AddonSearchResult, error) {
-	var gameVersionTypeId int
-	switch gameVersion {
-	case Retail:
-		gameVersionTypeId = 517
-	case Classic:
-		gameVersionTypeId = 67408
-	}
-
-	client := &http.Client{}
-
-	// First, search for the mod
-	searchURL, err := url.Parse("https://api.curseforge.com/v1/mods/search")
-	if err != nil {
-		return AddonSearchResult{}, err
-	}
-
-	query := searchURL.Query()
-	query.Set("gameId", "1")
-	query.Set("gameVersionTypeId", strconv.Itoa(gameVersionTypeId))
-	query.Set("slug", slug)
-	query.Set("index", "0")
-	query.Set("sortField", "2") // popularity
-	query.Set("sortOrder", "desc")
-	searchURL.RawQuery = query.Encode()
-
-	searchReq, err := http.NewRequest("GET", searchURL.String(), nil)
-	if err != nil {
-		return AddonSearchResult{}, err
-	}
-	searchReq.Header.Set("x-api-key", ad.curseToken)
-
-	searchRes, err := client.Do(searchReq)
-	if err != nil {
-		return AddonSearchResult{}, err
-	}
-	defer func() {
-		_ = searchRes.Body.Close()
-	}()
-
-	if searchRes.StatusCode != http.StatusOK {
-		return AddonSearchResult{}, fmt.Errorf("failed to fetch data: %s", searchRes.Status)
-	}
+func (as *AddonSearcher) curseSearch(slug string, gameVersion GameVersion) (AddonSearchResult, error) {
 
 	type CurseModFileIndex struct {
 		FileID            int `json:"fileId"`
@@ -117,8 +73,32 @@ func (ad *AddonSearcher) curseSearch(slug string, gameVersion GameVersion) (Addo
 		Data []CurseMod `json:"data"`
 	}
 
+	var gameVersionTypeId int
+	switch gameVersion {
+	case Retail:
+		gameVersionTypeId = 517
+	case Classic:
+		gameVersionTypeId = 67408
+	}
+
+	curseHeaders := map[string]string{
+		"x-api-key": as.curseToken,
+	}
+
 	var parsedSearchRes SearchModsResponse
-	if err := json.NewDecoder(searchRes.Body).Decode(&parsedSearchRes); err != nil {
+	err := as.httpClient.Get(RequestParams{
+		URL:     "https://api.curseforge.com/v1/mods/search",
+		Headers: curseHeaders,
+		Query: map[string]string{
+			"gameId":            "1",
+			"gameVersionTypeId": strconv.Itoa(gameVersionTypeId),
+			"slug":              slug,
+			"index":             "0",
+			"sortField":         "2", // popularity
+			"sortOrder":         "desc",
+		},
+	}, &parsedSearchRes)
+	if err != nil {
 		return AddonSearchResult{}, err
 	}
 
@@ -147,29 +127,6 @@ func (ad *AddonSearcher) curseSearch(slug string, gameVersion GameVersion) (Addo
 		return AddonSearchResult{}, errors.New("failed to find curse mod file index")
 	}
 
-	modFileURL, err := url.Parse(fmt.Sprintf("https://api.curseforge.com/v1/mods/%d/files/%d", curseMod.Id, fileIndex.FileID))
-	if err != nil {
-		return AddonSearchResult{}, err
-	}
-
-	modFileReq, err := http.NewRequest("GET", modFileURL.String(), nil)
-	if err != nil {
-		return AddonSearchResult{}, err
-	}
-	modFileReq.Header.Set("x-api-key", ad.curseToken)
-
-	modFileRes, err := client.Do(modFileReq)
-	if err != nil {
-		return AddonSearchResult{}, err
-	}
-	defer func() {
-		_ = modFileRes.Body.Close()
-	}()
-
-	if modFileRes.StatusCode != http.StatusOK {
-		return AddonSearchResult{}, fmt.Errorf("failed to fetch data: %s", searchRes.Status)
-	}
-
 	type ModFile struct {
 		DisplayName string `json:"displayName"`
 		DownloadUrl string `json:"downloadUrl"`
@@ -180,7 +137,12 @@ func (ad *AddonSearcher) curseSearch(slug string, gameVersion GameVersion) (Addo
 	}
 
 	var parsedModFileRes ModFileResponse
-	if err := json.NewDecoder(modFileRes.Body).Decode(&parsedModFileRes); err != nil {
+	err = as.httpClient.Get(RequestParams{
+		URL:     fmt.Sprintf("https://api.curseforge.com/v1/mods/%d/files/%d", curseMod.Id, fileIndex.FileID),
+		Headers: curseHeaders,
+	},
+		&parsedModFileRes)
+	if err != nil {
 		return AddonSearchResult{}, err
 	}
 
@@ -199,10 +161,10 @@ func (ad *AddonSearcher) curseSearch(slug string, gameVersion GameVersion) (Addo
 	}, nil
 }
 
-func (ad *AddonSearcher) Search(idOrUrl string, gameVersion GameVersion) (AddonSearchResult, error) {
-	curseSlug := ad.parseCurseSlug(idOrUrl)
+func (as *AddonSearcher) Search(idOrUrl string, gameVersion GameVersion) (AddonSearchResult, error) {
+	curseSlug := as.parseCurseSlug(idOrUrl)
 	if curseSlug != "" {
-		return ad.curseSearch(curseSlug, gameVersion)
+		return as.curseSearch(curseSlug, gameVersion)
 	}
 
 	return AddonSearchResult{}, errors.New("invalid addon id or url: " + idOrUrl)

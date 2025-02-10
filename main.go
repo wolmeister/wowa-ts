@@ -38,6 +38,8 @@ func getKeyValueStorePath() (string, error) {
 }
 
 func main() {
+	var httpClient = NewHTTPClient()
+
 	kvStorePath, err := getKeyValueStorePath()
 	if err != nil {
 		log.Fatal(err)
@@ -52,7 +54,7 @@ func main() {
 	var configRepository = NewConfigRepository(kvStore)
 	var userManager = NewUserManager(configRepository, apiUrl)
 	//var remoteAddonRepository = NewRemoteAddonRepository(userManager, apiUrl)
-	//var localAddonRepository = NewLocalAddonRepository(kvStore)
+	var localAddonRepository = NewLocalAddonRepository(kvStore)
 
 	curseToken, err := configRepository.Get(CurseToken)
 	if err != nil {
@@ -60,10 +62,8 @@ func main() {
 		return
 	}
 
-	log.Println("Curse Token:", curseToken)
-
-	var addonSearcher = NewAddonSearcher(curseToken)
-	var addonManager = NewAddonManager(addonSearcher)
+	var addonSearcher = NewAddonSearcher(httpClient, curseToken)
+	var addonManager = NewAddonManager(addonSearcher, localAddonRepository)
 
 	_, err = addonManager.Install("details", Retail)
 	if err != nil {
