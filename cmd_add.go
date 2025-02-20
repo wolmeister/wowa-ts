@@ -35,7 +35,7 @@ func SetupAddCmd(rootCmd *cobra.Command, addonManager *AddonManager) {
 
 			switch installResult.Status {
 			case AddonInstallStatusAlreadyInstalled:
-				spinner.Warn(fmt.Sprintf("%s (%s) %s is already installed", installResult.Addon.Slug, gameVersion, installResult.Addon.Version))
+				spinner.Info(fmt.Sprintf("%s (%s) %s is already installed", installResult.Addon.Slug, gameVersion, installResult.Addon.Version))
 			case AddonInstallStatusInstalled:
 				spinner.Succeed(fmt.Sprintf("%s (%s) %s installed successfully", installResult.Addon.Slug, gameVersion, installResult.Addon.Version))
 			case AddonInstallStatusReinstalled:

@@ -72,16 +72,6 @@ func main() {
 		Version: version,
 	}
 
-	// Update command
-	var updateCmd = &cobra.Command{
-		Use:     "up",
-		Aliases: []string{"update"},
-		Short:   "Update all installed addons",
-		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("Print: " + strings.Join(args, " "))
-		},
-	}
-
 	// Remove command
 	var removeCmd = &cobra.Command{
 		Use:     "rm <url>",
@@ -143,7 +133,7 @@ func main() {
 	}
 
 	SetupAddCmd(rootCmd, addonManager)
-	rootCmd.AddCommand(updateCmd)
+	SetupUpdateCmd(rootCmd, addonManager, remoteAddonRepository)
 	rootCmd.AddCommand(removeCmd)
 	rootCmd.AddCommand(lsCmd)
 	SetupConfigCmd(rootCmd, configRepository)
