@@ -19,7 +19,7 @@ func isValidEmail(email string) bool {
 
 // TODO: Improve the logs/out
 
-func AddLoginCmd(rootCmd *cobra.Command, userManager *UserManager) {
+func SetupLoginCmd(rootCmd *cobra.Command, userManager *UserManager) {
 	var loginCmd = &cobra.Command{
 		Use:   "login",
 		Short: "Login to your wowa account",

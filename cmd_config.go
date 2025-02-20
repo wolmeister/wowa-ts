@@ -6,7 +6,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func AddConfigCmd(rootCmd *cobra.Command, configRepository *ConfigRepository) {
+func SetupConfigCmd(rootCmd *cobra.Command, configRepository *ConfigRepository) {
 	var configCmd = &cobra.Command{
 		Use:   "config <key> [value]",
 		Short: "Manage configuration",

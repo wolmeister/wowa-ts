@@ -53,7 +53,7 @@ func main() {
 	}
 	var configRepository = NewConfigRepository(kvStore)
 	var userManager = NewUserManager(configRepository, apiUrl)
-	//var remoteAddonRepository = NewRemoteAddonRepository(userManager, apiUrl)
+	var remoteAddonRepository = NewRemoteAddonRepository(userManager, apiUrl)
 	var localAddonRepository = NewLocalAddonRepository(kvStore)
 
 	curseToken, err := configRepository.Get(CurseToken)
@@ -63,13 +63,7 @@ func main() {
 	}
 
 	var addonSearcher = NewAddonSearcher(httpClient, curseToken)
-	var addonManager = NewAddonManager(addonSearcher, localAddonRepository)
-
-	_, err = addonManager.Install("details", Retail)
-	if err != nil {
-		log.Fatal(err)
-		return
-	}
+	var addonManager = NewAddonManager(addonSearcher, configRepository, localAddonRepository, remoteAddonRepository, httpClient)
 
 	var rootCmd = &cobra.Command{
 		Use:     "wowa",
@@ -77,19 +71,6 @@ func main() {
 		Long:    `A simple CLI to manage World of Warcraft addons`,
 		Version: version,
 	}
-
-	// Add command
-	var addCmd = &cobra.Command{
-		Use:   "add <url>",
-		Short: "Install a new addon",
-		Args:  cobra.MinimumNArgs(1),
-		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("Print: " + strings.Join(args, " "))
-		},
-	}
-	addCmd.Flags().BoolP("retail", "r", true, "Install in the retail version of the game")
-	addCmd.Flags().BoolP("classic", "c", false, "Install in the classic version of the game")
-	addCmd.MarkFlagsMutuallyExclusive("classic", "retail")
 
 	// Update command
 	var updateCmd = &cobra.Command{
@@ -161,13 +142,13 @@ func main() {
 		},
 	}
 
-	rootCmd.AddCommand(addCmd)
+	SetupAddCmd(rootCmd, addonManager)
 	rootCmd.AddCommand(updateCmd)
 	rootCmd.AddCommand(removeCmd)
 	rootCmd.AddCommand(lsCmd)
-	AddConfigCmd(rootCmd, configRepository)
+	SetupConfigCmd(rootCmd, configRepository)
 	rootCmd.AddCommand(backupCmd)
-	AddLoginCmd(rootCmd, userManager)
+	SetupLoginCmd(rootCmd, userManager)
 	rootCmd.AddCommand(whoamiCmd)
 	rootCmd.AddCommand(selfUpdateCmd)
 	rootCmd.AddCommand(exportCmd)

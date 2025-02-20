@@ -131,7 +131,7 @@ func (rar *RemoteAddonRepository) GetAddons() ([]RemoteAddon, error) {
 	}()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to get addons: %s", resp.Status)
+		return nil, fmt.Errorf("failed to get remote addons: %s", resp.Status)
 	}
 
 	var addons []RemoteAddon
@@ -166,7 +166,7 @@ func (rar *RemoteAddonRepository) GetAddon(slug string, gameVersion GameVersion)
 	if resp.StatusCode == http.StatusNotFound {
 		return nil, nil // Addon not found
 	} else if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to get addon: %s", resp.Status)
+		return nil, fmt.Errorf("failed to get remote addon: %s", resp.Status)
 	}
 
 	var remoteAddon RemoteAddon
