@@ -72,44 +72,12 @@ func main() {
 		Version: version,
 	}
 
-	// Remove command
-	var removeCmd = &cobra.Command{
-		Use:     "rm <url>",
-		Aliases: []string{"remove"},
-		Short:   "Uninstall an addon",
-		Args:    cobra.MinimumNArgs(1),
-		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("Print: " + strings.Join(args, " "))
-		},
-	}
-	removeCmd.Flags().BoolP("retail", "r", true, "Remove from the retail version of the game")
-	removeCmd.Flags().BoolP("classic", "c", false, "Remove from the classic version of the game")
-	removeCmd.MarkFlagsMutuallyExclusive("classic", "retail")
-
-	// List command
-	var lsCmd = &cobra.Command{
-		Use:   "ls",
-		Short: "List all installed addons",
-		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("Print: " + strings.Join(args, " "))
-		},
-	}
-
 	// Backup command
 	var backupCmd = &cobra.Command{
 		Use:   "backup",
 		Short: "Backup the WTF folder",
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("Print: " + strings.Join(args, " "))
-		},
-	}
-
-	// Whoami command
-	var whoamiCmd = &cobra.Command{
-		Use:   "whoami",
-		Short: "Display the user email currently logged in",
-		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("Print: " + strings.Join(args, " "))
+			fmt.Println("TODO: This will be implemented again soon")
 		},
 	}
 
@@ -128,18 +96,18 @@ func main() {
 		Use:   "export",
 		Short: "Export all installed addons",
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("Print: " + strings.Join(args, " "))
+			fmt.Println("TODO: This will be implemented again soon")
 		},
 	}
 
 	SetupAddCmd(rootCmd, addonManager)
 	SetupUpdateCmd(rootCmd, addonManager, remoteAddonRepository)
-	rootCmd.AddCommand(removeCmd)
-	rootCmd.AddCommand(lsCmd)
+	SetupRemoveCmd(rootCmd, addonManager)
+	SetupLsCmd(rootCmd, localAddonRepository)
 	SetupConfigCmd(rootCmd, configRepository)
 	rootCmd.AddCommand(backupCmd)
 	SetupLoginCmd(rootCmd, userManager)
-	rootCmd.AddCommand(whoamiCmd)
+	SetupWhoamiCmd(rootCmd, userManager)
 	rootCmd.AddCommand(selfUpdateCmd)
 	rootCmd.AddCommand(exportCmd)
 

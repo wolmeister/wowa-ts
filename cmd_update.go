@@ -13,6 +13,8 @@ func SetupUpdateCmd(rootCmd *cobra.Command, addonManager *AddonManager, remoteAd
 		Short:   "Update all installed addons",
 		Aliases: []string{"up"},
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// TODO: This should also remove uninstalled addons
+
 			addons, err := remoteAddonRepository.GetAddons()
 			if err != nil {
 				return err

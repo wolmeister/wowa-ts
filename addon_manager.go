@@ -286,3 +286,45 @@ func (am *AddonManager) Install(url string, gameVersion GameVersion) (AddonInsta
 		Status: resultStatus,
 	}, nil
 }
+
+func (am *AddonManager) Remove(id string, gameVersion GameVersion) (bool, error) {
+	// TODO: This should check if the local addons are up to date with the remote repository.
+
+	//Get the local addon
+	localAddon, err := am.localAddonRepository.Get(id, gameVersion)
+	if err != nil {
+		return false, err
+	}
+	if localAddon == nil {
+		return false, nil
+	}
+
+	// Get the folder where the addons are installed
+	addonsFolder, err := am.getAddonsFolder(gameVersion)
+	if err != nil {
+		return false, err
+	}
+
+	// Delete the addon files
+	for _, d := range localAddon.Directories {
+		dirPath := filepath.Join(addonsFolder, d)
+		err := os.RemoveAll(dirPath)
+		if err != nil {
+			return false, err
+		}
+	}
+
+	//Delete the local addon
+	err = am.localAddonRepository.Delete(id, gameVersion)
+	if err != nil {
+		return false, err
+	}
+
+	// Delete the remote addon
+	err = am.remoteAddonRepository.DeleteAddon(localAddon.Slug, gameVersion)
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
+}
