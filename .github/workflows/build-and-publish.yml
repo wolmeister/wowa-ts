@@ -25,7 +25,7 @@ jobs:
       - name: Build
         env:
           API_URL: ${{ secrets.API_URL }}
-          VERSION: ${{ env.VERSION }}
+          VERSION: ${{ github.event.release.tag_name }}
         run: |
           GOOS=linux GOARCH=amd64 go build -o dist/wowa-linux64 -ldflags "-X main.version=${VERSION} -X main.apiUrl=${API_URL}"
           GOOS=windows GOARCH=amd64 go build -o dist/wowa-win64.exe -ldflags "-X main.version=${VERSION} -X main.apiUrl=${API_URL}"
