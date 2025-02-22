@@ -16,19 +16,19 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup bun
-        uses: oven-sh/setup-bun@v2
+      - name: Setup go
+        uses: actions/setup-go@v4
 
       - name: Install dependencies
-        run: bun install
+        run: go mod tidy
 
-      - name: Lint
-        run: make lint
-
-      - name: Build and compile
-        run: make
+      - name: Build
         env:
           API_URL: ${{ secrets.API_URL }}
+          VERSION: ${{ env.VERSION }}
+        run: |
+          GOOS=linux GOARCH=amd64 go build -o dist/wowa-linux64 -ldflags "-X main.version=${VERSION}"
+          GOOS=windows GOARCH=amd64 go build -o dist/wowa-win64.exe -ldflags "-X main.version=${VERSION}"
 
       - name: Publish
         uses: softprops/action-gh-release@v2

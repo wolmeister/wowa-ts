@@ -9,10 +9,9 @@ import (
 	"runtime"
 )
 
-// go build -ldflags "-X main.version=v1.0.0"
+// go build -ldflags "-X main.version=FOO"
 var (
 	version = "dev"
-	apiUrl  = "http://144.22.216.8:8888"
 )
 
 func getKeyValueStorePath() (string, error) {
@@ -50,6 +49,8 @@ func main() {
 		log.Fatal(err)
 		return
 	}
+
+	apiUrl := os.Getenv("API_URL")
 	var configRepository = NewConfigRepository(kvStore)
 	var userManager = NewUserManager(configRepository, apiUrl)
 	var remoteAddonRepository = NewRemoteAddonRepository(userManager, apiUrl)
