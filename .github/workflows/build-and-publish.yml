@@ -27,8 +27,8 @@ jobs:
           API_URL: ${{ secrets.API_URL }}
           VERSION: ${{ env.VERSION }}
         run: |
-          GOOS=linux GOARCH=amd64 go build -o dist/wowa-linux64 -ldflags "-X main.version=${VERSION}"
-          GOOS=windows GOARCH=amd64 go build -o dist/wowa-win64.exe -ldflags "-X main.version=${VERSION}"
+          GOOS=linux GOARCH=amd64 go build -o dist/wowa-linux64 -ldflags "-X main.version=${VERSION} -X main.apiUrl=${API_URL}"
+          GOOS=windows GOARCH=amd64 go build -o dist/wowa-win64.exe -ldflags "-X main.version=${VERSION} -X main.apiUrl=${API_URL}"
 
       - name: Publish
         uses: softprops/action-gh-release@v2
