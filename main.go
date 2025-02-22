@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"strings"
 )
 
 // go build -ldflags "-X main.version=v1.0.0"
@@ -64,6 +63,7 @@ func main() {
 
 	var addonSearcher = NewAddonSearcher(httpClient, curseToken)
 	var addonManager = NewAddonManager(addonSearcher, configRepository, localAddonRepository, remoteAddonRepository, httpClient)
+	var selfUpdateManager = NewSelfUpdateManager(version, httpClient)
 
 	var rootCmd = &cobra.Command{
 		Use:     "wowa",
@@ -78,16 +78,6 @@ func main() {
 		Short: "Backup the WTF folder",
 		Run: func(cmd *cobra.Command, args []string) {
 			fmt.Println("TODO: This will be implemented again soon")
-		},
-	}
-
-	// Self-update command
-	var selfUpdateCmd = &cobra.Command{
-		Use:     "self-update",
-		Aliases: []string{"su"},
-		Short:   "Check and download new wowa updates",
-		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("Print: " + strings.Join(args, " "))
 		},
 	}
 
@@ -108,7 +98,7 @@ func main() {
 	rootCmd.AddCommand(backupCmd)
 	SetupLoginCmd(rootCmd, userManager)
 	SetupWhoamiCmd(rootCmd, userManager)
-	rootCmd.AddCommand(selfUpdateCmd)
+	SetupSelfUpdateCmd(rootCmd, selfUpdateManager)
 	rootCmd.AddCommand(exportCmd)
 
 	if err := rootCmd.Execute(); err != nil {
