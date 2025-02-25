@@ -324,24 +324,41 @@ func (wam *WeakAuraManager) UpdateAll(gameVersion GameVersion) ([]WeakAuraUpdate
 
 	var wg sync.WaitGroup
 	var updates []WeakAuraUpdate
+
 	for _, waUpdate := range wagoResponse {
-		wg.Add(1)
-		encodedBytes, err := wam.httpClient.GetBytes(RequestParams{
-			URL: "https://data.wago.io/api/raw/encoded?id=" + waUpdate.Slug,
-		})
-		if err != nil {
-			wg.Done()
-			return nil, err
+		shouldUpdate := false
+		for _, wa := range weakAuras {
+			if wa.Slug == waUpdate.Slug {
+				shouldUpdate = waUpdate.WagoVersion > wa.Version
+				break
+			}
 		}
-		updates = append(updates, WeakAuraUpdate{
-			Slug:        waUpdate.Slug,
-			Name:        waUpdate.Name,
-			Author:      waUpdate.Author,
-			WagoVersion: waUpdate.WagoVersion,
-			WagoSemver:  waUpdate.WagoSemver,
-			Encoded:     string(encodedBytes),
-		})
-		wg.Done()
+		if !shouldUpdate {
+			continue
+		}
+
+		wg.Add(1)
+		go func(waUpdate WagoCheckUpdatesRequestResponse) {
+			defer wg.Done()
+
+			encodedBytes, err := wam.httpClient.GetBytes(RequestParams{
+				URL: "https://data.wago.io/api/raw/encoded?id=" + waUpdate.Slug,
+			})
+			if err != nil {
+				// TODO: Handle errors
+				wg.Done()
+				return
+			}
+			updates = append(updates, WeakAuraUpdate{
+				Slug:        waUpdate.Slug,
+				Name:        waUpdate.Name,
+				Author:      waUpdate.Author,
+				WagoVersion: waUpdate.WagoVersion,
+				WagoSemver:  waUpdate.WagoSemver,
+				Encoded:     string(encodedBytes),
+			})
+
+		}(waUpdate)
 	}
 
 	wg.Wait()

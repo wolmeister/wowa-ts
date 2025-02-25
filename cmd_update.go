@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/wolmeister/wowa/spinny"
+	"strings"
 	"sync"
 )
 
@@ -15,14 +16,22 @@ func SetupUpdateCmd(rootCmd *cobra.Command, addonManager *AddonManager, remoteAd
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// TODO: This should also remove uninstalled addons
 
-			addons, err := remoteAddonRepository.GetAddons()
-			if err != nil {
-				return err
-			}
-
+			//TODO: Improve spinners/output logic. It's a mess right now. And ugly.
 			var spinners = spinny.NewManager()
 			spinners.Start()
 			defer spinners.Stop()
+
+			var addonsSpinner = spinners.NewSpinner("Updating addons...")
+			var installedAddons []LocalAddon
+			var updatedAddons []LocalAddon
+			var reinstalledAddons []LocalAddon
+			var errors []string
+
+			addons, err := remoteAddonRepository.GetAddons()
+			if err != nil {
+				addonsSpinner.Fail("Failed to retrieve addons")
+				return err
+			}
 
 			var wg sync.WaitGroup
 			for _, addon := range addons {
@@ -30,41 +39,67 @@ func SetupUpdateCmd(rootCmd *cobra.Command, addonManager *AddonManager, remoteAd
 				go func(addon RemoteAddon) {
 					defer wg.Done()
 
-					var spinner = spinners.NewSpinner(fmt.Sprintf("Updating %s (%s)", addon.Slug, addon.GameVersion))
-
 					installResult, err := addonManager.Install(addon.Url, addon.GameVersion)
 					if err != nil {
-						spinner.Fail(fmt.Sprintf("Failed to update %s (%s) - %s", addon.Slug, addon.GameVersion, err.Error()))
+						errors = append(errors, fmt.Sprintf("Failed to update %s (%s) - %s", addon.Slug, addon.GameVersion, err.Error()))
 						return
 					}
 
 					switch installResult.Status {
 					case AddonInstallStatusAlreadyInstalled:
-						spinner.Info(fmt.Sprintf("%s (%s) %s is already up to date", installResult.Addon.Slug, installResult.Addon.GameVersion, installResult.Addon.Version))
+						// Do nothing
 					case AddonInstallStatusInstalled:
-						spinner.Succeed(fmt.Sprintf("%s (%s) %s installed successfully", installResult.Addon.Slug, installResult.Addon.GameVersion, installResult.Addon.Version))
+						installedAddons = append(installedAddons, installResult.Addon)
 					case AddonInstallStatusReinstalled:
-						spinner.Warn(fmt.Sprintf("%s (%s) %s reinstalled", installResult.Addon.Slug, installResult.Addon.GameVersion, installResult.Addon.Version))
+						reinstalledAddons = append(reinstalledAddons, installResult.Addon)
 					case AddonInstallStatusUpdated:
-						spinner.Succeed(fmt.Sprintf("%s (%s) updated to %s", installResult.Addon.Slug, installResult.Addon.GameVersion, installResult.Addon.Version))
+						updatedAddons = append(updatedAddons, installResult.Addon)
 					}
 
 				}(addon)
 			}
 
-			waSpinner := spinners.NewSpinner("Updating retail weak auras")
-			waUpdates, err := weakAuraManager.UpdateAll(Retail)
-			if err != nil {
-				waSpinner.Fail("Failed to update retail weak auras")
-			} else {
-				if len(waUpdates) > 0 {
-					waSpinner.Succeed(fmt.Sprintf("Updated %d retail weak auras", len(waUpdates)))
+			var waWg sync.WaitGroup
+			waWg.Add(1)
+			go func() {
+				defer waWg.Done()
+				waSpinner := spinners.NewSpinner("Updating weak auras...")
+				waUpdates, err := weakAuraManager.UpdateAll(Retail)
+				if err != nil {
+					waSpinner.Fail("Failed to update retail weak auras")
 				} else {
-					waSpinner.Info("No weak aura to update")
+					if len(waUpdates) > 0 {
+						waSpinner.Succeed(fmt.Sprintf("Updated %d retail weak auras", len(waUpdates)))
+					} else {
+						waSpinner.Info("All weak auras are up to date")
+					}
+				}
+			}()
+
+			wg.Wait()
+
+			if len(errors) > 0 {
+				addonsSpinner.Fail(fmt.Sprintf("Addons update complete with %d errors", len(errors)))
+			} else {
+				var messageParts []string
+				if len(updatedAddons) > 0 {
+					messageParts = append(messageParts, fmt.Sprintf("%d addons updated", len(updatedAddons)))
+				}
+				if len(reinstalledAddons) > 0 {
+					messageParts = append(messageParts, fmt.Sprintf("%d addons reinstalled", len(reinstalledAddons)))
+				}
+				if len(installedAddons) > 0 {
+					messageParts = append(messageParts, fmt.Sprintf("%d addons installed", len(installedAddons)))
+				}
+
+				if len(messageParts) > 0 {
+					addonsSpinner.Succeed(strings.Join(messageParts, ", "))
+				} else {
+					addonsSpinner.Info("All addons are up to date")
 				}
 			}
 
-			wg.Wait()
+			waWg.Wait()
 
 			return nil
 		},
