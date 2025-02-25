@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"io"
@@ -24,7 +25,7 @@ func NewHTTPClient() *HTTPClient {
 	}
 }
 
-func (c *HTTPClient) doGet(params RequestParams) (*http.Response, error) {
+func (c *HTTPClient) doRequest(params RequestParams, method string, body io.Reader) (*http.Response, error) {
 	requestURL, err := url.Parse(params.URL)
 	if err != nil {
 		return nil, err
@@ -38,7 +39,7 @@ func (c *HTTPClient) doGet(params RequestParams) (*http.Response, error) {
 	requestURL.RawQuery = query.Encode()
 
 	// Create the request
-	req, err := http.NewRequest("GET", requestURL.String(), nil)
+	req, err := http.NewRequest(method, requestURL.String(), body)
 	if err != nil {
 		return nil, err
 	}
@@ -63,7 +64,7 @@ func (c *HTTPClient) doGet(params RequestParams) (*http.Response, error) {
 }
 
 func (c *HTTPClient) Get(params RequestParams, target interface{}) error {
-	res, err := c.doGet(params)
+	res, err := c.doRequest(params, "GET", nil)
 	if err != nil {
 		return err
 	}
@@ -81,7 +82,7 @@ func (c *HTTPClient) Get(params RequestParams, target interface{}) error {
 }
 
 func (c *HTTPClient) GetBytes(params RequestParams) ([]byte, error) {
-	res, err := c.doGet(params)
+	res, err := c.doRequest(params, "GET", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -90,10 +91,33 @@ func (c *HTTPClient) GetBytes(params RequestParams) ([]byte, error) {
 	}(res.Body)
 
 	// Read response bytes
-	bytes, err := io.ReadAll(res.Body)
+	bytesRes, err := io.ReadAll(res.Body)
 	if err != nil {
 		return nil, err
 	}
 
-	return bytes, nil
+	return bytesRes, nil
+}
+
+func (c *HTTPClient) Post(params RequestParams, rawBody interface{}, target interface{}) error {
+	body, err := json.Marshal(rawBody)
+	if err != nil {
+		return err
+	}
+
+	res, err := c.doRequest(params, "POST", bytes.NewBuffer(body))
+	if err != nil {
+		return err
+	}
+	defer func(Body io.ReadCloser) {
+		_ = Body.Close()
+	}(res.Body)
+
+	//Decode response into target struct
+	err = json.NewDecoder(res.Body).Decode(target)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

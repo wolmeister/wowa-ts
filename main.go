@@ -65,6 +65,7 @@ func main() {
 	var addonSearcher = NewAddonSearcher(httpClient, curseToken)
 	var addonManager = NewAddonManager(addonSearcher, configRepository, localAddonRepository, remoteAddonRepository, httpClient)
 	var selfUpdateManager = NewSelfUpdateManager(version, httpClient)
+	var weakAuraManager = NewWeakAuraManager(configRepository, httpClient)
 
 	var rootCmd = &cobra.Command{
 		Use:     "wowa",
@@ -92,7 +93,7 @@ func main() {
 	}
 
 	SetupAddCmd(rootCmd, addonManager)
-	SetupUpdateCmd(rootCmd, addonManager, remoteAddonRepository)
+	SetupUpdateCmd(rootCmd, addonManager, remoteAddonRepository, weakAuraManager)
 	SetupRemoveCmd(rootCmd, addonManager)
 	SetupLsCmd(rootCmd, localAddonRepository)
 	SetupConfigCmd(rootCmd, configRepository)

@@ -5,6 +5,7 @@ go 1.23.3
 require (
 	github.com/gosuri/uilive v0.0.4
 	github.com/spf13/cobra v1.8.1
+	github.com/yuin/gopher-lua v1.1.1
 	golang.org/x/crypto v0.32.0
 )
 

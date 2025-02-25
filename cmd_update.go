@@ -7,7 +7,7 @@ import (
 	"sync"
 )
 
-func SetupUpdateCmd(rootCmd *cobra.Command, addonManager *AddonManager, remoteAddonRepository *RemoteAddonRepository) {
+func SetupUpdateCmd(rootCmd *cobra.Command, addonManager *AddonManager, remoteAddonRepository *RemoteAddonRepository, weakAuraManager *WeakAuraManager) {
 	var addCmd = &cobra.Command{
 		Use:     "update",
 		Short:   "Update all installed addons",
@@ -50,6 +50,18 @@ func SetupUpdateCmd(rootCmd *cobra.Command, addonManager *AddonManager, remoteAd
 					}
 
 				}(addon)
+			}
+
+			waSpinner := spinners.NewSpinner("Updating retail weak auras")
+			waUpdates, err := weakAuraManager.UpdateAll(Retail)
+			if err != nil {
+				waSpinner.Fail("Failed to update retail weak auras")
+			} else {
+				if len(waUpdates) > 0 {
+					waSpinner.Succeed(fmt.Sprintf("Updated %d retail weak auras", len(waUpdates)))
+				} else {
+					waSpinner.Info("No weak aura to update")
+				}
 			}
 
 			wg.Wait()
