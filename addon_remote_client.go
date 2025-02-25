@@ -36,6 +36,7 @@ type CreateAddonRequest struct {
 type RemoteAddonRepository struct {
 	userManager *UserManager
 	apiUrl      string
+	cache       []RemoteAddon
 }
 
 func NewRemoteAddonRepository(userManager *UserManager, apiUrl string) *RemoteAddonRepository {
@@ -78,6 +79,8 @@ func (rar *RemoteAddonRepository) CreateAddon(addon CreateAddonRequest) (*Remote
 		return nil, err
 	}
 
+	rar.cache = append(rar.cache, remoteAddon)
+
 	return &remoteAddon, nil
 }
 
@@ -106,10 +109,24 @@ func (rar *RemoteAddonRepository) DeleteAddon(slug string, gameVersion GameVersi
 		return fmt.Errorf("failed to delete addon: %s", resp.Status)
 	}
 
+	if rar.cache != nil {
+		var newCache []RemoteAddon
+		for _, addon := range rar.cache {
+			if addon.Slug != slug || addon.GameVersion != gameVersion {
+				newCache = append(newCache, addon)
+			}
+		}
+		rar.cache = newCache
+	}
+
 	return nil
 }
 
 func (rar *RemoteAddonRepository) GetAddons() ([]RemoteAddon, error) {
+	if rar.cache != nil {
+		return rar.cache, nil
+	}
+
 	token, err := rar.userManager.GetUserToken()
 	if err != nil || token == "" {
 		return nil, errors.New("no user signed in")
@@ -139,10 +156,20 @@ func (rar *RemoteAddonRepository) GetAddons() ([]RemoteAddon, error) {
 		return nil, err
 	}
 
+	rar.cache = addons
+
 	return addons, nil
 }
 
 func (rar *RemoteAddonRepository) GetAddon(slug string, gameVersion GameVersion) (*RemoteAddon, error) {
+	if rar.cache != nil {
+		for _, addon := range rar.cache {
+			if addon.Slug == slug && addon.GameVersion == gameVersion {
+				return &addon, nil
+			}
+		}
+	}
+
 	token, err := rar.userManager.GetUserToken()
 	if err != nil || token == "" {
 		return nil, errors.New("no user signed in")
@@ -173,6 +200,8 @@ func (rar *RemoteAddonRepository) GetAddon(slug string, gameVersion GameVersion)
 	if err := json.NewDecoder(resp.Body).Decode(&remoteAddon); err != nil {
 		return nil, err
 	}
+
+	rar.cache = append(rar.cache, remoteAddon)
 
 	return &remoteAddon, nil
 }
