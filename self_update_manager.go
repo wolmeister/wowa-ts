@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"runtime"
+	"strconv"
 	"strings"
 )
 
@@ -58,8 +59,12 @@ func (sum *SelfUpdateManager) isVersionAtOrBelow(version1 string, version2 strin
 		if i >= len(v2) {
 			return false
 		}
-		if v1[i] != v2[i] {
-			return v1[i] < v2[i]
+
+		p1, _ := strconv.Atoi(v1[i])
+		p2, _ := strconv.Atoi(v2[i])
+
+		if p1 != p2 {
+			return p1 < p2
 		}
 	}
 
