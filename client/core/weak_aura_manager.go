@@ -1,15 +1,17 @@
-package main
+package core
 
 import (
 	"errors"
 	"fmt"
-	lua "github.com/yuin/gopher-lua"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
 	"sync"
+	"wowa/utils"
+
+	lua "github.com/yuin/gopher-lua"
 )
 
 type WeakAuraManager struct {
@@ -168,7 +170,7 @@ func (wam *WeakAuraManager) parseWeakAuraFile(luaPath string) ([]LocalWeakAura, 
 
 func (wam *WeakAuraManager) getInstalledWeakAuras(gameVersion GameVersion) ([]LocalWeakAura, error) {
 	var weakAuras []LocalWeakAura
-	weakAurasNames := NewSet[string]()
+	weakAurasNames := utils.NewSet[string]()
 
 	luaPaths, err := wam.getWeakAurasLuaPath(gameVersion)
 	if err != nil {

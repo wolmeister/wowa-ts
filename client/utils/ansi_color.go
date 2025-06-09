@@ -1,4 +1,4 @@
-package main
+package utils
 
 const (
 	AnsiReset   = "\033[0m"

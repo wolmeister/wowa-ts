@@ -1,12 +1,14 @@
-package main
+package cmd
 
 import (
 	"fmt"
+	"wowa/core"
+	"wowa/spinny"
+
 	"github.com/spf13/cobra"
-	"github.com/wolmeister/wowa/spinny"
 )
 
-func SetupRemoveCmd(rootCmd *cobra.Command, addonManager *AddonManager) {
+func SetupRemoveCmd(rootCmd *cobra.Command, addonManager *core.AddonManager) {
 	var removeCmd = &cobra.Command{
 		Use:     "rm <id>",
 		Aliases: []string{"remove"},
@@ -15,11 +17,11 @@ func SetupRemoveCmd(rootCmd *cobra.Command, addonManager *AddonManager) {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			id := args[0]
 
-			var gameVersion GameVersion
+			var gameVersion core.GameVersion
 			if cmd.Flag("retail").Value.String() == "true" {
-				gameVersion = Retail
+				gameVersion = core.Retail
 			} else {
-				gameVersion = Classic
+				gameVersion = core.Classic
 			}
 
 			var spinners = spinny.NewManager()
@@ -35,7 +37,7 @@ func SetupRemoveCmd(rootCmd *cobra.Command, addonManager *AddonManager) {
 			}
 
 			if removed {
-				spinner.Succeed(fmt.Sprintf("Removed %s (%s) successfulyl", id, gameVersion))
+				spinner.Succeed(fmt.Sprintf("Removed %s (%s) successfully", id, gameVersion))
 			} else {
 				spinner.Warn(fmt.Sprintf("%s (%s) not found", id, gameVersion))
 			}

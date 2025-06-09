@@ -1,4 +1,4 @@
-package main
+package core
 
 import (
 	"archive/zip"
@@ -11,6 +11,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"wowa/utils"
 )
 
 type AddonManager struct {
@@ -103,8 +104,8 @@ func (am *AddonManager) extractAddon(zipBytes []byte, addonsFolder string) ([]st
 		return nil, err
 	}
 
-	rootDirectories := NewSet[string]()
-	allDirectories := NewSet[string]()
+	rootDirectories := utils.NewSet[string]()
+	allDirectories := utils.NewSet[string]()
 
 	// First, discover all directories
 	for _, file := range zipReader.File {
@@ -114,7 +115,7 @@ func (am *AddonManager) extractAddon(zipBytes []byte, addonsFolder string) ([]st
 
 		// Check for ZipSlip
 		if strings.Contains(file.Name, "..") || filepath.IsAbs(file.Name) {
-			return nil, errors.New(fmt.Sprintf("illegal file path: %s", file.Name))
+			return nil, fmt.Errorf("illegal file path: %s", file.Name)
 		}
 
 		pathParts := strings.Split(file.Name, "/")

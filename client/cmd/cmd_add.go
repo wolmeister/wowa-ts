@@ -1,12 +1,14 @@
-package main
+package cmd
 
 import (
 	"fmt"
+	"wowa/core"
+	"wowa/spinny"
+
 	"github.com/spf13/cobra"
-	"github.com/wolmeister/wowa/spinny"
 )
 
-func SetupAddCmd(rootCmd *cobra.Command, addonManager *AddonManager) {
+func SetupAddCmd(rootCmd *cobra.Command, addonManager *core.AddonManager) {
 	var addCmd = &cobra.Command{
 		Use:   "add <url>",
 		Short: "Install a new addon",
@@ -14,11 +16,11 @@ func SetupAddCmd(rootCmd *cobra.Command, addonManager *AddonManager) {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			url := args[0]
 
-			var gameVersion GameVersion
+			var gameVersion core.GameVersion
 			if cmd.Flag("retail").Value.String() == "true" {
-				gameVersion = Retail
+				gameVersion = core.Retail
 			} else {
-				gameVersion = Classic
+				gameVersion = core.Classic
 			}
 
 			var spinners = spinny.NewManager()
@@ -34,13 +36,13 @@ func SetupAddCmd(rootCmd *cobra.Command, addonManager *AddonManager) {
 			}
 
 			switch installResult.Status {
-			case AddonInstallStatusAlreadyInstalled:
+			case core.AddonInstallStatusAlreadyInstalled:
 				spinner.Info(fmt.Sprintf("%s (%s) %s is already installed", installResult.Addon.Slug, gameVersion, installResult.Addon.Version))
-			case AddonInstallStatusInstalled:
+			case core.AddonInstallStatusInstalled:
 				spinner.Succeed(fmt.Sprintf("%s (%s) %s installed successfully", installResult.Addon.Slug, gameVersion, installResult.Addon.Version))
-			case AddonInstallStatusReinstalled:
+			case core.AddonInstallStatusReinstalled:
 				spinner.Warn(fmt.Sprintf("%s (%s) %s reinstalled", installResult.Addon.Slug, gameVersion, installResult.Addon.Version))
-			case AddonInstallStatusUpdated:
+			case core.AddonInstallStatusUpdated:
 				spinner.Info(fmt.Sprintf("%s (%s) updated to %s", installResult.Addon.Slug, gameVersion, installResult.Addon.Version))
 			}
 

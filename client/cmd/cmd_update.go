@@ -1,15 +1,17 @@
-package main
+package cmd
 
 import (
 	"fmt"
 	"os"
 	"sync"
+	"wowa/core"
+	"wowa/utils"
 
 	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/cobra"
 )
 
-func SetupUpdateCmd(rootCmd *cobra.Command, addonManager *AddonManager, remoteAddonRepository *RemoteAddonRepository, weakAuraManager *WeakAuraManager) {
+func SetupUpdateCmd(rootCmd *cobra.Command, addonManager *core.AddonManager, remoteAddonRepository *core.RemoteAddonRepository, weakAuraManager *core.WeakAuraManager) {
 	var addCmd = &cobra.Command{
 		Use:     "update",
 		Short:   "Update all installed addons",
@@ -51,24 +53,24 @@ func SetupUpdateCmd(rootCmd *cobra.Command, addonManager *AddonManager, remoteAd
 			wg.Add(len(addons))
 
 			for _, addon := range addons {
-				go func(addon RemoteAddon) {
+				go func(addon core.RemoteAddon) {
 					defer wg.Done()
 					defer progressBar.Add(1)
 
 					installResult, err := addonManager.Install(addon.Url, addon.GameVersion)
 					if err != nil {
-						messages = append(messages, fmt.Sprintf("%sFailed to update addon %s (%s) - %s %s", AnsiRed, addon.Slug, addon.GameVersion, err.Error(), AnsiReset))
+						messages = append(messages, fmt.Sprintf("%sFailed to update addon %s (%s) - %s %s", utils.AnsiRed, addon.Slug, addon.GameVersion, err.Error(), utils.AnsiReset))
 						return
 					}
 
 					switch installResult.Status {
-					case AddonInstallStatusAlreadyInstalled:
+					case core.AddonInstallStatusAlreadyInstalled:
 						// Do nothing
-					case AddonInstallStatusInstalled:
+					case core.AddonInstallStatusInstalled:
 						messages = append(messages, fmt.Sprintf("Addon %s (%s) %s installed", addon.Slug, addon.GameVersion, installResult.Addon.Version))
-					case AddonInstallStatusReinstalled:
+					case core.AddonInstallStatusReinstalled:
 						messages = append(messages, fmt.Sprintf("Addon %s (%s) %s reinstalled", addon.Slug, addon.GameVersion, installResult.Addon.Version))
-					case AddonInstallStatusUpdated:
+					case core.AddonInstallStatusUpdated:
 						messages = append(messages, fmt.Sprintf("Addon %s (%s) updated to %s", addon.Slug, addon.GameVersion, installResult.Addon.Version))
 					}
 
@@ -83,9 +85,9 @@ func SetupUpdateCmd(rootCmd *cobra.Command, addonManager *AddonManager, remoteAd
 				defer wg.Done()
 				defer progressBar.Add(1)
 
-				waUpdates, err := weakAuraManager.UpdateAll(Retail)
+				waUpdates, err := weakAuraManager.UpdateAll(core.Retail)
 				if err != nil {
-					messages = append(messages, fmt.Sprintf("%sFailed to update weak auras %s %s", AnsiRed, err.Error(), AnsiReset))
+					messages = append(messages, fmt.Sprintf("%sFailed to update weak auras %s %s", utils.AnsiRed, err.Error(), utils.AnsiReset))
 					return
 				}
 

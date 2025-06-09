@@ -1,11 +1,14 @@
-package main
+package cmd
 
 import (
 	"fmt"
+	"wowa/core"
+	"wowa/utils"
+
 	"github.com/spf13/cobra"
 )
 
-func SetupWhoamiCmd(rootCmd *cobra.Command, userManager *UserManager) {
+func SetupWhoamiCmd(rootCmd *cobra.Command, userManager *core.UserManager) {
 	var addCmd = &cobra.Command{
 		Use:   "whoami",
 		Short: "Display the user email currently logged in",
@@ -16,11 +19,11 @@ func SetupWhoamiCmd(rootCmd *cobra.Command, userManager *UserManager) {
 			}
 
 			if email == "" {
-				fmt.Println(AnsiYellow, "null", AnsiReset)
+				fmt.Println(utils.AnsiYellow, "null", utils.AnsiReset)
 				return nil
 			}
 
-			fmt.Println(AnsiBlue, email, AnsiReset)
+			fmt.Println(utils.AnsiBlue, email, utils.AnsiReset)
 			return nil
 		},
 	}

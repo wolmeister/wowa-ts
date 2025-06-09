@@ -1,4 +1,4 @@
-module github.com/wolmeister/wowa
+module wowa
 
 go 1.23.3
 

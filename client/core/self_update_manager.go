@@ -1,10 +1,7 @@
-package main
+package core
 
 import (
-	"encoding/json"
 	"errors"
-	"fmt"
-	"net/http"
 	"os"
 	"runtime"
 	"strconv"
@@ -27,27 +24,6 @@ func NewSelfUpdateManager(currentVersion string, httpClient *HTTPClient) *SelfUp
 		currentVersion: currentVersion,
 		httpClient:     httpClient,
 	}
-}
-
-func (sum *SelfUpdateManager) getLatestGithubRelease(owner, repo string) (map[string]interface{}, error) {
-	url := fmt.Sprintf("https://api.github.com/repos/%s/%s/releases/latest", owner, repo)
-	resp, err := http.Get(url)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, errors.New("failed to get latest release")
-	}
-
-	var release map[string]interface{}
-	err = json.NewDecoder(resp.Body).Decode(&release)
-	if err != nil {
-		return nil, err
-	}
-
-	return release, nil
 }
 
 func (sum *SelfUpdateManager) isVersionAtOrBelow(version1 string, version2 string) bool {
@@ -91,7 +67,7 @@ func (sum *SelfUpdateManager) UpdateToLatest() (SelfUpdateResult, error) {
 	}
 
 	latestVersion := latestRelease.TagName
-	if sum.isVersionAtOrBelow(latestVersion, version) {
+	if sum.isVersionAtOrBelow(latestVersion, sum.currentVersion) {
 		return SelfUpdateResult{Updated: false}, nil
 	}
 
@@ -102,12 +78,10 @@ func (sum *SelfUpdateManager) UpdateToLatest() (SelfUpdateResult, error) {
 		case "windows":
 			if a.Name == "wowa-win64.exe" {
 				asset = a
-				break
 			}
 		case "linux":
 			if a.Name == "wowa-linux64" {
 				asset = a
-				break
 			}
 		default:
 			return SelfUpdateResult{}, errors.New("unsupported operating system")

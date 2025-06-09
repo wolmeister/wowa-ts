@@ -1,12 +1,14 @@
-package main
+package cmd
 
 import (
 	"fmt"
-	"github.com/spf13/cobra"
 	"strings"
+	"wowa/core"
+
+	"github.com/spf13/cobra"
 )
 
-func SetupLsCmd(rootCmd *cobra.Command, localAddonRepository *LocalAddonRepository) {
+func SetupLsCmd(rootCmd *cobra.Command, localAddonRepository *core.LocalAddonRepository) {
 	var addCmd = &cobra.Command{
 		Use:   "ls",
 		Short: "List all installed addons",

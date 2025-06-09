@@ -1,4 +1,4 @@
-package main
+package core
 
 import (
 	"bytes"
@@ -105,7 +105,7 @@ func (rar *RemoteAddonRepository) DeleteAddon(slug string, gameVersion GameVersi
 		_ = resp.Body.Close()
 	}()
 
-	if resp.StatusCode != http.StatusNoContent {
+	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("failed to delete addon: %s", resp.Status)
 	}
 

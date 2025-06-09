@@ -1,12 +1,14 @@
-package main
+package cmd
 
 import (
 	"fmt"
+	"wowa/core"
+	"wowa/spinny"
+
 	"github.com/spf13/cobra"
-	"github.com/wolmeister/wowa/spinny"
 )
 
-func SetupSelfUpdateCmd(rootCmd *cobra.Command, selfUpdateManager *SelfUpdateManager) {
+func SetupSelfUpdateCmd(rootCmd *cobra.Command, selfUpdateManager *core.SelfUpdateManager) {
 	var selfUpdateCmd = &cobra.Command{
 		Use:     "self-update",
 		Aliases: []string{"su"},

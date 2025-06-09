@@ -1,12 +1,15 @@
-package main
+package cmd
 
 import (
 	"errors"
 	"fmt"
+	"wowa/core"
+	"wowa/utils"
+
 	"github.com/spf13/cobra"
 )
 
-func SetupConfigCmd(rootCmd *cobra.Command, configRepository *ConfigRepository) {
+func SetupConfigCmd(rootCmd *cobra.Command, configRepository *core.ConfigRepository) {
 	var configCmd = &cobra.Command{
 		Use:   "config <key> [value]",
 		Short: "Manage configuration",
@@ -14,8 +17,8 @@ func SetupConfigCmd(rootCmd *cobra.Command, configRepository *ConfigRepository) 
 		RunE: func(cmd *cobra.Command, args []string) error {
 			key := args[0]
 
-			switch Config(key) {
-			case CurseToken, GameDir, AuthToken:
+			switch core.Config(key) {
+			case core.CurseToken, core.GameDir, core.AuthToken:
 				break
 			default:
 				// TODO: Add the available keys to the error message.
@@ -23,18 +26,18 @@ func SetupConfigCmd(rootCmd *cobra.Command, configRepository *ConfigRepository) 
 			}
 
 			if len(args) > 1 {
-				err := configRepository.Set(Config(key), &args[1])
+				err := configRepository.Set(core.Config(key), &args[1])
 				if err != nil {
 					return err
 				}
 			} else {
-				value, err := configRepository.Get(Config(key))
+				value, err := configRepository.Get(core.Config(key))
 				if err != nil {
 					return err
 				}
 
 				if value == "" {
-					fmt.Println(AnsiBlue + "<null>" + AnsiReset)
+					fmt.Println(utils.AnsiBlue + "<null>" + utils.AnsiReset)
 				} else {
 					fmt.Println(value)
 				}

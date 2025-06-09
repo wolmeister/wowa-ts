@@ -20,9 +20,11 @@ jobs:
         uses: actions/setup-go@v4
 
       - name: Install dependencies
+        working-directory: ./client
         run: go mod tidy
 
       - name: Build
+        working-directory: ./client
         env:
           API_URL: ${{ secrets.API_URL }}
           VERSION: ${{ github.ref_name }}
@@ -34,5 +36,5 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            dist/wowa-linux64
-            dist/wowa-win64.exe
+            client/dist/wowa-linux64
+            client/dist/wowa-win64.exe
