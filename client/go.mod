@@ -6,6 +6,7 @@ require (
 	github.com/gosuri/uilive v0.0.4
 	github.com/schollz/progressbar/v3 v3.18.0
 	github.com/spf13/cobra v1.8.1
+	github.com/webview/webview_go v0.0.0-20240831120633-6173450d4dd6
 	github.com/yuin/gopher-lua v1.1.1
 	golang.org/x/crypto v0.32.0
 )

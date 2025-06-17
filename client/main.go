@@ -9,6 +9,7 @@ import (
 
 	"wowa/cmd"
 	"wowa/core"
+	"wowa/gui"
 
 	"github.com/spf13/cobra"
 )
@@ -76,6 +77,11 @@ func main() {
 		Short:   "World of Warcraft addon manager",
 		Long:    `A simple CLI to manage World of Warcraft addons`,
 		Version: version,
+	}
+
+	if len(os.Args) == 1 {
+		gui.StartGui()
+		return
 	}
 
 	cmd.SetupAddCmd(rootCmd, addonManager)
