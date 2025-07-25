@@ -9,6 +9,7 @@ import (
 
 	"wowa/cmd"
 	"wowa/core"
+	"wowa/gui"
 
 	"github.com/spf13/cobra"
 )
@@ -70,6 +71,14 @@ func main() {
 	var addonManager = core.NewAddonManager(addonSearcher, configRepository, localAddonRepository, remoteAddonRepository, httpClient)
 	var selfUpdateManager = core.NewSelfUpdateManager(version, httpClient)
 	var weakAuraManager = core.NewWeakAuraManager(configRepository, httpClient)
+
+	if len(os.Args) == 1 {
+		err := gui.Start(localAddonRepository)
+		if err != nil {
+			log.Fatal(err)
+		}
+		return
+	}
 
 	var rootCmd = &cobra.Command{
 		Use:     "wowa",
