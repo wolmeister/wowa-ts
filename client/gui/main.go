@@ -1,6 +1,9 @@
 package gui
 
 import (
+	"bytes"
+	_ "embed"
+	"image/png"
 	"wowa/core"
 
 	g "github.com/AllenDang/giu"
@@ -54,20 +57,34 @@ func loop() {
 	)
 }
 
+//go:embed icon.png
+var iconBytes []byte
+
 func Start(localAddonRepository *core.LocalAddonRepository) error {
 	go func() {
 		addons, _ = localAddonRepository.GetAll(nil)
 	}()
 
+	// Create the window
 	wnd := g.NewMasterWindow("wowa", 1024, 900, 0)
-	icon, _ := g.LoadImage("/home/victor-dev/Desktop/victor/wowa-ts/icon2.png")
-	wnd.SetIcon(icon)
 
+	// Load icon
+	iconReader := bytes.NewReader(iconBytes)
+	iconPng, err := png.Decode(iconReader)
+	if err != nil {
+		return err
+	}
+	iconRgba := g.ImageToRgba(iconPng)
+	wnd.SetIcon(iconRgba)
+
+	// Set style
 	style := g.Style()
 	// style.SetColor(g.StyleColorWindowBg, color.RGBA{0x55, 0x55, 0x55, 255})
 	style.SetStyle(g.StyleVarWindowPadding, 32, 32)
 	wnd.SetStyle(style)
 
+	// Run
 	wnd.Run(loop)
+
 	return nil
 }
