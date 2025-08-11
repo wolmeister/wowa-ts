@@ -65,8 +65,13 @@ func main() {
 		log.Fatal(err)
 		return
 	}
+	githubToken, err := configRepository.Get(core.GithubToken)
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
 
-	var addonSearcher = core.NewAddonSearcher(httpClient, curseToken)
+	var addonSearcher = core.NewAddonSearcher(httpClient, curseToken, githubToken)
 	var addonManager = core.NewAddonManager(addonSearcher, configRepository, localAddonRepository, remoteAddonRepository, httpClient)
 	var selfUpdateManager = core.NewSelfUpdateManager(version, httpClient)
 	var weakAuraManager = core.NewWeakAuraManager(configRepository, httpClient)

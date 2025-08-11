@@ -18,7 +18,7 @@ func SetupConfigCmd(rootCmd *cobra.Command, configRepository *core.ConfigReposit
 			key := args[0]
 
 			switch core.Config(key) {
-			case core.CurseToken, core.GameDir, core.AuthToken:
+			case core.CurseToken, core.GithubToken, core.GameDir, core.AuthToken:
 				break
 			default:
 				// TODO: Add the available keys to the error message.

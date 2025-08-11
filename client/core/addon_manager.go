@@ -226,7 +226,7 @@ func (am *AddonManager) Install(url string, gameVersion GameVersion) (AddonInsta
 	}
 
 	// Download the zip
-	zipBytes, err := am.httpClient.GetBytes(RequestParams{URL: searchResult.DownloadUrl})
+	zipBytes, err := am.httpClient.GetBytes(searchResult.DownloadUrl)
 	if err != nil {
 		return AddonInstallResult{}, err
 	}

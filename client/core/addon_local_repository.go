@@ -15,7 +15,8 @@ const (
 type AddonProvider string
 
 const (
-	Curse AddonProvider = "curse"
+	Curse  AddonProvider = "curse"
+	Github AddonProvider = "github"
 )
 
 type LocalAddon struct {

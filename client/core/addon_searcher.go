@@ -17,16 +17,17 @@ type AddonSearchResult struct {
 	Provider    AddonProvider
 	ExternalId  string
 	Url         string
-	DownloadUrl string
+	DownloadUrl RequestParams
 }
 
 type AddonSearcher struct {
-	httpClient *HTTPClient
-	curseToken string
+	httpClient  *HTTPClient
+	curseToken  string
+	githubToken string
 }
 
-func NewAddonSearcher(httpClient *HTTPClient, curseToken string) *AddonSearcher {
-	return &AddonSearcher{httpClient: httpClient, curseToken: curseToken}
+func NewAddonSearcher(httpClient *HTTPClient, curseToken string, githubToken string) *AddonSearcher {
+	return &AddonSearcher{httpClient: httpClient, curseToken: curseToken, githubToken: githubToken}
 }
 
 func (as *AddonSearcher) parseCurseSlug(idOrUrl string) string {
@@ -157,7 +158,88 @@ func (as *AddonSearcher) curseSearch(slug string, gameVersion GameVersion) (Addo
 		Provider:    Curse,
 		ExternalId:  strconv.Itoa(curseMod.Id),
 		Url:         fmt.Sprintf("https://www.curseforge.com/wow/addons/%s", curseMod.Slug),
-		DownloadUrl: modFile.DownloadUrl,
+		DownloadUrl: RequestParams{
+			URL: modFile.DownloadUrl,
+		},
+	}, nil
+}
+
+func (as *AddonSearcher) parseGithubOrganizationAndRepository(idOrUrl string) (string, string) {
+	rawRepo := ""
+
+	// Check if the ID starts with "gh:"
+	if strings.HasPrefix(idOrUrl, "gh:") {
+		rawRepo = strings.TrimPrefix(idOrUrl, "cf:")
+	}
+
+	// Check if the ID is a CurseForge URL
+	if strings.HasPrefix(idOrUrl, "https://github.com/") {
+		rawRepo = strings.TrimPrefix(idOrUrl, "https://github.com/")
+	}
+
+	if rawRepo != "" {
+		parts := strings.SplitN(rawRepo, "/", 2)
+		if len(parts) == 2 {
+			return parts[0], parts[1]
+		}
+	}
+
+	return "", ""
+}
+
+func (as *AddonSearcher) githubSearch(organization string, repository string, gameVersion GameVersion) (AddonSearchResult, error) {
+	type GithubReleaseAsset struct {
+		Id                 int    `json:"id"`
+		Name               string `json:"name"`
+		BrowserDownloadUrl string `json:"browser_download_url"`
+	}
+
+	type GithubRelease struct {
+		TagName string               `json:"tag_name"`
+		Assets  []GithubReleaseAsset `json:"assets"`
+	}
+
+	var latestRelease GithubRelease
+	err := as.httpClient.Get(RequestParams{
+		URL: fmt.Sprintf("https://api.github.com/repos/%s/%s/releases/latest", organization, repository),
+		Headers: map[string]string{
+			"Authorization": "token " + as.githubToken,
+		},
+	}, &latestRelease)
+
+	if err != nil {
+		return AddonSearchResult{}, err
+	}
+
+	var asset GithubReleaseAsset
+	for _, a := range latestRelease.Assets {
+		if strings.HasSuffix(a.BrowserDownloadUrl, ".zip") {
+			asset = a
+			break
+		}
+	}
+
+	if asset.Id == 0 {
+		return AddonSearchResult{}, errors.New("addon asset not found")
+
+	}
+
+	return AddonSearchResult{
+		Slug:        repository,
+		Name:        repository,
+		Author:      organization,
+		GameVersion: gameVersion,
+		Version:     latestRelease.TagName,
+		Provider:    Github,
+		ExternalId:  fmt.Sprintf("%s/%s", organization, repository),
+		Url:         fmt.Sprintf("https://github.com/%s/%s", organization, repository),
+		DownloadUrl: RequestParams{
+			URL: fmt.Sprintf("https://api.github.com/repos/%s/%s/releases/assets/%d", organization, repository, asset.Id),
+			Headers: map[string]string{
+				"Accept":        "application/octet-stream",
+				"Authorization": "token " + as.githubToken,
+			},
+		},
 	}, nil
 }
 
@@ -165,6 +247,11 @@ func (as *AddonSearcher) Search(idOrUrl string, gameVersion GameVersion) (AddonS
 	curseSlug := as.parseCurseSlug(idOrUrl)
 	if curseSlug != "" {
 		return as.curseSearch(curseSlug, gameVersion)
+	}
+
+	organization, repository := as.parseGithubOrganizationAndRepository(idOrUrl)
+	if organization != "" && repository != "" {
+		return as.githubSearch(organization, repository, gameVersion)
 	}
 
 	return AddonSearchResult{}, errors.New("invalid addon id or url: " + idOrUrl)

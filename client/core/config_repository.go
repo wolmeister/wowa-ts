@@ -3,9 +3,10 @@ package core
 type Config string
 
 const (
-	CurseToken Config = "curse.token"
-	GameDir    Config = "game.dir"
-	AuthToken  Config = "auth.token"
+	CurseToken  Config = "curse.token"
+	GithubToken Config = "github.token"
+	GameDir     Config = "game.dir"
+	AuthToken   Config = "auth.token"
 )
 
 type ConfigRepository struct {
