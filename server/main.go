@@ -62,12 +62,12 @@ type LoginRequest struct {
 	Password string `json:"password" validate:"required,min=4"`
 }
 
-type AddAdonnRequest struct {
+type AddAddonRequest struct {
 	GameVersion GameVersion `json:"game_version" validate:"required,oneof=retail classic"`
 	Slug        string      `json:"slug" validate:"required"`
 	Name        string      `json:"name" validate:"required"`
 	Author      string      `json:"author" validate:"required"`
-	Provider    Provider    `json:"provider" validate:"required,oneof=curse"`
+	Provider    Provider    `json:"provider" validate:"required,oneof=curse github"`
 	ExternalId  string      `json:"external_id" validate:"required"`
 	Url         string      `json:"url" validate:"required,url"`
 }
@@ -166,7 +166,7 @@ func createAddonHandler(db *gorm.DB, validate *validator.Validate) http.HandlerF
 			return
 		}
 
-		var addAddonRequest AddAdonnRequest
+		var addAddonRequest AddAddonRequest
 		if err := json.NewDecoder(r.Body).Decode(&addAddonRequest); err != nil {
 			http.Error(w, "Bad request", http.StatusBadRequest)
 			return
