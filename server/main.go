@@ -37,7 +37,8 @@ const (
 type Provider string
 
 const (
-	Curse Provider = "curse"
+	Curse  Provider = "curse"
+	Github Provider = "github"
 )
 
 type Addon struct {
